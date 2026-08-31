@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import { BadRequestError } from '../errors.js';
+import { CreateListingRequest, createPublication } from '../lib/publications.js';
 import { getListingDetail, ListingSearchParams, searchListings } from '../services/catalogService.js';
 import { Grade, PublicationStatus } from '../types.js';
 
@@ -87,6 +88,17 @@ router.get(
     if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
     const detail = await getListingDetail(publicationId);
     res.json(detail);
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const created = await createPublication(req.body as CreateListingRequest, {
+      userId: req.header('X-User-Id'),
+      role: req.header('X-User-Role'),
+    });
+    res.status(201).json(created);
   }),
 );
 

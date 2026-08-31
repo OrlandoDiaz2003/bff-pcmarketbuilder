@@ -2,6 +2,20 @@ import { config } from '../config.js';
 import { Publication, PublicationStatus, Grade, SpringPage } from '../types.js';
 import { buildQuery, requestJson } from './http.js';
 
+export interface CreateListingRequest {
+  productId: string;
+  title: string;
+  description?: string;
+  price: number;
+  grade: Grade;
+  usageTimeMonths?: number;
+}
+
+export interface AuthHeaders {
+  userId?: string;
+  role?: string;
+}
+
 export interface PublicationFilters {
   sellerId?: string;
   status?: PublicationStatus;
@@ -39,4 +53,18 @@ export async function listAllPublications(filters: PublicationFilters): Promise<
 
 export async function getPublication(publicationId: string): Promise<Publication> {
   return requestJson<Publication>(`${config.publicationsBaseUrl}/${publicationId}`);
+}
+
+export async function createPublication(
+  body: CreateListingRequest,
+  authHeaders: AuthHeaders,
+): Promise<Publication> {
+  const headers: Record<string, string> = {};
+  if (authHeaders.userId) headers['X-User-Id'] = authHeaders.userId;
+  if (authHeaders.role) headers['X-User-Role'] = authHeaders.role;
+  return requestJson<Publication>(config.publicationsBaseUrl, {
+    method: 'POST',
+    headers,
+    body,
+  });
 }
