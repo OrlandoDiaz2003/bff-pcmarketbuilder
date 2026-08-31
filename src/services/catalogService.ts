@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { getCategories, getProduct, listAllProducts } from '../lib/products.js';
 import { getPublication, listAllPublications, PublicationFilters } from '../lib/publications.js';
+import { getPublicProfileByOid } from '../lib/users.js';
 import {
   Category,
   Grade,
@@ -10,6 +11,7 @@ import {
   ProductSummary,
   Publication,
   PublicationStatus,
+  Seller,
   SpringPage,
 } from '../types.js';
 
@@ -23,11 +25,19 @@ interface CachedCategories {
   data: Category[];
 }
 
+interface CachedSeller {
+  at: number;
+  seller: Seller;
+}
+
 const ttl = () => config.cacheTtlMs;
+const userTtl = () => config.userCacheTtlMs;
 
 let catalogCache: CachedCatalog | null = null;
 let categoriesCache: CachedCategories | null = null;
 let missingProductsCache: { at: number; ids: Set<string> } | null = null;
+const sellersCache = new Map<string, CachedSeller>();
+let missingSellersCache: { at: number; ids: Set<string> } | null = null;
 
 async function getCatalogIndex(): Promise<Map<string, Product>> {
   if (catalogCache && Date.now() - catalogCache.at < ttl()) {
@@ -59,6 +69,29 @@ async function lookupProduct(productId: string): Promise<Product | null> {
       missingProductsCache = { at: Date.now(), ids: new Set() };
     }
     missingProductsCache.ids.add(productId);
+    return null;
+  }
+}
+
+async function lookupSeller(azureOid: string): Promise<Seller | null> {
+  const cached = sellersCache.get(azureOid);
+  if (cached && Date.now() - cached.at < userTtl()) {
+    return cached.seller;
+  }
+
+  if (missingSellersCache && missingSellersCache.ids.has(azureOid)) {
+    return null;
+  }
+
+  try {
+    const seller = await getPublicProfileByOid(azureOid);
+    sellersCache.set(azureOid, { at: Date.now(), seller });
+    return seller;
+  } catch {
+    if (!missingSellersCache || Date.now() - missingSellersCache.at >= userTtl()) {
+      missingSellersCache = { at: Date.now(), ids: new Set() };
+    }
+    missingSellersCache.ids.add(azureOid);
     return null;
   }
 }
@@ -159,19 +192,24 @@ export async function searchListings(params: ListingSearchParams): Promise<Sprin
 
   filtered.sort((a, b) => Date.parse(b.publication.createdAt) - Date.parse(a.publication.createdAt));
 
-  const cards: ListingCard[] = filtered.map(({ publication, product }) => ({
-    publicationId: publication.publicationId,
-    productId: publication.productId,
-    sellerId: publication.sellerId,
-    title: publication.title,
-    price: publication.price,
-    grade: publication.grade,
-    status: publication.status,
-    createdAt: publication.createdAt,
-    primaryImage: primaryImage(publication),
-    imageCount: publication.images.length,
-    product: product ? toProductSummary(product) : null,
-  }));
+  const cards: ListingCard[] = [];
+  for (const { publication, product } of filtered) {
+    const seller = await lookupSeller(publication.sellerId);
+    cards.push({
+      publicationId: publication.publicationId,
+      productId: publication.productId,
+      sellerId: publication.sellerId,
+      title: publication.title,
+      price: publication.price,
+      grade: publication.grade,
+      status: publication.status,
+      createdAt: publication.createdAt,
+      primaryImage: primaryImage(publication),
+      imageCount: publication.images.length,
+      product: product ? toProductSummary(product) : null,
+      seller,
+    });
+  }
 
   return buildPage(cards, params.page, params.limit);
 }
@@ -179,7 +217,10 @@ export async function searchListings(params: ListingSearchParams): Promise<Sprin
 export async function getListingDetail(publicationId: string): Promise<ListingDetail> {
   const publication = await getPublication(publicationId);
 
-  const product = await lookupProduct(publication.productId);
+  const [product, seller] = await Promise.all([
+    lookupProduct(publication.productId),
+    lookupSeller(publication.sellerId),
+  ]);
   return {
     publicationId: publication.publicationId,
     sellerId: publication.sellerId,
@@ -193,6 +234,7 @@ export async function getListingDetail(publicationId: string): Promise<ListingDe
     createdAt: publication.createdAt,
     images: publication.images,
     product,
+    seller,
   };
 }
 

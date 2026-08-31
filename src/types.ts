@@ -80,6 +80,12 @@ export interface ProductSummary {
   socket: string | null;
 }
 
+export interface Seller {
+  username: string;
+  avatarUrl: string | null;
+  bio: string | null;
+}
+
 export interface ListingCard {
   publicationId: string;
   productId: string;
@@ -92,6 +98,7 @@ export interface ListingCard {
   primaryImage: string | null;
   imageCount: number;
   product: ProductSummary | null;
+  seller: Seller | null;
 }
 
 export interface ListingDetail {
@@ -107,4 +114,5 @@ export interface ListingDetail {
   createdAt: string;
   images: PublicationImage[];
   product: Product | null;
+  seller: Seller | null;
 }

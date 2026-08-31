@@ -18,7 +18,11 @@
     .section h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .03em; color: #6b7280; margin-bottom: 14px; }
     #title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     #subtitle { color: #6b7280; margin-bottom: 12px; }
-    #price { font-size: 28px; font-weight: 800; color: #7c3aed; margin-bottom: 12px; }
+    #price { font-size: 28px; font-weight: 800; color: #111827; margin-bottom: 12px; }
+    #sellerBox { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; }
+    #sellerBox img { width: 44px; height: 44px; border-radius: 50%; background: #e5e7eb; object-fit: cover; }
+    #sellerBox .uname { font-weight: 700; }
+    #sellerBox .bio { font-size: 13px; color: #6b7280; }
     .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
     .badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #4338ca; }
     .badge.grade { background: #fff7ed; color: #9a3412; }
@@ -54,6 +58,7 @@
         <div id="price"></div>
         <div class="badges" id="badges"></div>
         <p id="description"></p>
+        <div id="sellerBox"></div>
       </div>
       <div class="section">
         <h2>Imágenes</h2>
@@ -113,6 +118,31 @@
         document.getElementById('price').textContent = `$${d.price.toLocaleString('es-CL')}`;
         document.getElementById('description').textContent = d.description || 'Sin descripción.';
 
+        const sellerBox = document.getElementById('sellerBox');
+        sellerBox.innerHTML = '';
+        if (d.seller) {
+          const avatar = document.createElement('img');
+          if (d.seller.avatarUrl) {
+            avatar.src = d.seller.avatarUrl;
+            avatar.alt = 'avatar';
+            avatar.onerror = () => { avatar.remove(); };
+          }
+          const info = document.createElement('div');
+          const uname = document.createElement('div');
+          uname.className = 'uname';
+          uname.textContent = `@${d.seller.username}`;
+          const bio = document.createElement('div');
+          bio.className = 'bio';
+          bio.textContent = d.seller.bio || '';
+          info.append(uname, bio);
+          sellerBox.append(avatar, info);
+        } else {
+          const span = document.createElement('span');
+          span.className = 'bio';
+          span.textContent = 'Vendedor no disponible (no hizo /sync o el perfil no responde).';
+          sellerBox.append(span);
+        }
+
         const badges = document.getElementById('badges');
         badges.innerHTML = '';
         for (const [text, cls] of [[d.grade, 'grade'], [d.status, null]]) {
@@ -142,7 +172,8 @@
         pubTable.innerHTML = '';
         for (const kv of [
           ['publicationId', d.publicationId],
-          ['sellerId', d.sellerId],
+          ['sellerId (azure_oid)', d.sellerId],
+          ['seller username', d.seller ? d.seller.username : 'no disponible'],
           ['productId', d.productId],
           ['precio (CLP)', d.price],
           ['grade', d.grade],
