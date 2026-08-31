@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace - Publicaciones</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f3f4f6; color: #111827; }
+    header { background: #111827; color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 20px; }
+    #count { font-size: 14px; color: #9ca3af; }
+    main { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+    #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.1); cursor: pointer; }
+    .card:hover { box-shadow: 0 6px 16px rgba(0,0,0,.15); }
+    .card img { width: 100%; height: 180px; object-fit: cover; background: #e5e7eb; display: block; }
+    .card .body { padding: 12px 14px 14px; }
+    .card .title { font-weight: 600; margin-bottom: 4px; }
+    .card .meta { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+    .card .price { font-size: 18px; font-weight: 700; color: #7c3aed; }
+    .card .badges { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: #eef2ff; color: #4338ca; }
+    .badge.grade { background: #fff7ed; color: #9a3412; }
+    #status { padding: 24px; text-align: center; color: #6b7280; }
+    #status.error { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Marketplace PC Parts</h1>
+    <span id="count">cargando…</span>
+  </header>
+  <main>
+    <div id="status">Cargando publicaciones…</div>
+    <div id="grid"></div>
+  </main>
+
+  <script>
+    const BFF = 'http://localhost:4000';
+
+    async function load() {
+      const status = document.getElementById('status');
+      const grid = document.getElementById('grid');
+      const count = document.getElementById('count');
+
+      try {
+        const res = await fetch(`${BFF}/api/listings?status=ACTIVE&page=1&limit=20`);
+        if (!res.ok) throw new Error(`BFF respondió ${res.status}`);
+        const page = await res.json();
+
+        if (page.totalElements === 0) {
+          status.textContent = 'No hay publicaciones activas.';
+          return;
+        }
+
+        count.textContent = `${page.totalElements} publicaciones`;
+        status.remove();
+
+        const fragment = document.createDocumentFragment();
+        for (const item of page.content) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.title = 'Ver detalle';
+          card.addEventListener('click', () => {
+            window.open(`view-detail.html?id=${encodeURIComponent(item.publicationId)}`, '_blank');
+          });
+
+          const img = document.createElement('img');
+          img.src = item.primaryImage || '';
+          img.alt = item.title;
+          img.onerror = () => { img.src = ''; img.alt = 'sin imagen'; };
+
+          const body = document.createElement('div');
+          body.className = 'body';
+
+          const title = document.createElement('div');
+          title.className = 'title';
+          title.textContent = item.title;
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          const prod = item.product;
+          meta.textContent = prod ? `${prod.brand} ${prod.model} · ${prod.subcategoryName}` : 'Producto no disponible';
+
+          const price = document.createElement('div');
+          price.className = 'price';
+          price.textContent = `$${item.price.toLocaleString('es-CL')}`;
+
+          const badges = document.createElement('div');
+          badges.className = 'badges';
+          const grade = document.createElement('span');
+          grade.className = 'badge grade';
+          grade.textContent = item.grade;
+          const statusBadge = document.createElement('span');
+          statusBadge.className = 'badge';
+          statusBadge.textContent = item.status;
+          badges.append(grade, statusBadge);
+
+          body.append(title, meta, price, badges);
+          card.append(img, body);
+          fragment.appendChild(card);
+        }
+        grid.appendChild(fragment);
+      } catch (err) {
+        status.classList.add('error');
+        status.textContent = `Error: ${err.message}. ¿Está corriendo el BFF en ${BFF}?`;
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace - Detalle</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f3f4f6; color: #111827; }
+    header { background: #111827; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    header h1 { font-size: 18px; }
+    header a { color: #a5b4fc; font-size: 14px; }
+    main { max-width: 1000px; margin: 24px auto; padding: 0 24px; }
+    #picker { display: flex; gap: 8px; margin-bottom: 24px; }
+    #picker input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+    #picker button { padding: 10px 18px; border: 0; border-radius: 8px; background: #7c3aed; color: #fff; font-weight: 600; cursor: pointer; }
+    .section { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .section h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .03em; color: #6b7280; margin-bottom: 14px; }
+    #title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    #subtitle { color: #6b7280; margin-bottom: 12px; }
+    #price { font-size: 28px; font-weight: 800; color: #7c3aed; margin-bottom: 12px; }
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #4338ca; }
+    .badge.grade { background: #fff7ed; color: #9a3412; }
+    #description { color: #374151; line-height: 1.5; }
+    #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    #gallery figure { position: relative; border-radius: 8px; overflow: hidden; background: #e5e7eb; }
+    #gallery img { width: 100%; height: 130px; object-fit: cover; display: block; }
+    #gallery figcaption { position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 8px; font-size: 11px; background: rgba(0,0,0,.55); color: #fff; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+    td:first-child { color: #6b7280; width: 40%; }
+    details pre { background: #111827; color: #a5f3fc; padding: 14px; border-radius: 8px; overflow-x: auto; font-size: 12px; margin-top: 10px; }
+    #status { padding: 24px; text-align: center; color: #6b7280; }
+    #status.error { color: #b91c1c; }
+    .muted { color: #9ca3af; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Marketplace PC Parts · Detalle</h1>
+    <a href="view.html">← Volver al listado</a>
+  </header>
+  <main>
+    <div id="picker">
+      <input id="idInput" placeholder="publicationId (UUID)" />
+      <button id="loadBtn">Cargar</button>
+    </div>
+    <div id="status">Aguardando publicación…</div>
+    <div id="content" style="display:none">
+      <div class="section">
+        <div id="title"></div>
+        <div id="subtitle"></div>
+        <div id="price"></div>
+        <div class="badges" id="badges"></div>
+        <p id="description"></p>
+      </div>
+      <div class="section">
+        <h2>Imágenes</h2>
+        <div id="gallery"></div>
+        <p id="noImages" class="muted">Sin imágenes registradas.</p>
+      </div>
+      <div class="section">
+        <h2>Publicación</h2>
+        <table id="pubTable"></table>
+      </div>
+      <div class="section">
+        <h2>Ficha del producto</h2>
+        <table id="prodTable"></table>
+      </div>
+      <div class="section">
+        <h2>Respuesta cruda (BFF)</h2>
+        <details>
+          <summary>Ver JSON</summary>
+          <pre id="rawJson"></pre>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const BFF = 'http://localhost:4000';
+
+    const params = new URLSearchParams(location.search);
+    const idInput = document.getElementById('idInput');
+    const loadBtn = document.getElementById('loadBtn');
+    const status = document.getElementById('status');
+    const content = document.getElementById('content');
+
+    function row(label, value) {
+      const tr = document.createElement('tr');
+      const tdL = document.createElement('td');
+      tdL.textContent = label;
+      const tdV = document.createElement('td');
+      tdV.textContent = value ?? '—';
+      tr.append(tdL, tdV);
+      return tr;
+    }
+
+    async function load(id) {
+      try {
+        status.className = 'error';
+        status.textContent = 'Cargando…';
+        let res = await fetch(`${BFF}/api/listings/${id}`);
+        if (res.status === 404) throw new Error('Publicación no encontrada (404)');
+        if (!res.ok) throw new Error(`BFF respondió ${res.status}`);
+        const d = await res.json();
+
+        document.getElementById('title').textContent = d.title;
+        document.getElementById('subtitle').textContent = d.product
+          ? `${d.product.brand} ${d.product.model} · ${d.product.subcategory.name}`
+          : 'Producto no disponible en el catálogo';
+        document.getElementById('price').textContent = `$${d.price.toLocaleString('es-CL')}`;
+        document.getElementById('description').textContent = d.description || 'Sin descripción.';
+
+        const badges = document.getElementById('badges');
+        badges.innerHTML = '';
+        for (const [text, cls] of [[d.grade, 'grade'], [d.status, null]]) {
+          const b = document.createElement('span');
+          b.className = 'badge' + (cls ? ` ${cls}` : '');
+          b.textContent = text;
+          badges.appendChild(b);
+        }
+
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '';
+        const noImages = document.getElementById('noImages');
+        noImages.style.display = d.images.length ? 'none' : 'block';
+        for (const img of d.images) {
+          const fig = document.createElement('figure');
+          const el = document.createElement('img');
+          el.src = img.imageUrl;
+          el.alt = 'imagen';
+          el.onerror = () => { el.src = ''; fig.remove(); };
+          const cap = document.createElement('figcaption');
+          cap.textContent = img.isPrimary ? 'PRIMARIA' : img.imageId.slice(0, 8);
+          fig.append(el, cap);
+          gallery.appendChild(fig);
+        }
+
+        const pubTable = document.getElementById('pubTable');
+        pubTable.innerHTML = '';
+        for (const kv of [
+          ['publicationId', d.publicationId],
+          ['sellerId', d.sellerId],
+          ['productId', d.productId],
+          ['precio (CLP)', d.price],
+          ['grade', d.grade],
+          ['status', d.status],
+          ['tiempo de uso (meses)', d.usageTimeMonths],
+          ['createdAt', d.createdAt]
+        ]) pubTable.appendChild(row(...kv));
+
+        const prodTable = document.getElementById('prodTable');
+        prodTable.innerHTML = '';
+        if (d.product) {
+          const p = d.product;
+          for (const kv of [
+            ['productId', p.productId],
+            ['subcategory', `${p.subcategory.name} (${p.subcategory.subcategoryId})`],
+            ['brand', p.brand],
+            ['model', p.model],
+            ['socket', p.socket],
+            ['formFactor', p.formFactor],
+            ['ramType', p.ramType],
+            ['tdpWatts', p.tdpWatts],
+            ['psuWatts', p.psuWatts],
+            ['ramSlots', p.ramSlots],
+            ['storageType', p.storageType]
+          ]) prodTable.appendChild(row(...kv));
+        } else {
+          prodTable.appendChild(row('estado', 'producto no encontrado en el catálogo 🤷'));
+        }
+
+        document.getElementById('rawJson').textContent = JSON.stringify(d, null, 2);
+        status.style.display = 'none';
+        content.style.display = 'block';
+      } catch (err) {
+        status.style.display = 'block';
+        status.classList.add('error');
+        status.textContent = `Error: ${err.message}`;
+        content.style.display = 'none';
+      }
+    }
+
+    loadBtn.addEventListener('click', () => load(idInput.value.trim()));
+    idInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(idInput.value.trim()); });
+
+    if (idInput.value = params.get('id') || '') {
+      load(idInput.value);
+    }
+  </script>
+</body>
+</html>
