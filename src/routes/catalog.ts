@@ -1,6 +1,11 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import { BadRequestError } from '../errors.js';
-import { CreateListingRequest, createPublication } from '../lib/publications.js';
+import {
+  AddImageRequest,
+  addPublicationImage,
+  CreateListingRequest,
+  createPublication,
+} from '../lib/publications.js';
 import { getListingDetail, ListingSearchParams, searchListings } from '../services/catalogService.js';
 import { Grade, PublicationStatus } from '../types.js';
 
@@ -99,6 +104,24 @@ router.post(
       role: req.header('X-User-Role'),
     });
     res.status(201).json(created);
+  }),
+);
+
+router.post(
+  '/:publicationId/images',
+  asyncHandler(async (req, res) => {
+    const raw = req.params.publicationId;
+    const publicationId = Array.isArray(raw) ? raw[0] : raw;
+    if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
+    const updated = await addPublicationImage(
+      publicationId,
+      req.body as AddImageRequest,
+      {
+        userId: req.header('X-User-Id'),
+        role: req.header('X-User-Role'),
+      },
+    );
+    res.status(201).json(updated);
   }),
 );
 

@@ -21,5 +21,6 @@ export const config = {
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),
+  logFile: process.env.LOG_FILE || '',
   catalogPageSize: 100,
 } as const;

@@ -68,3 +68,23 @@ export async function createPublication(
     body,
   });
 }
+
+export interface AddImageRequest {
+  imageUrl: string;
+  isPrimary?: boolean;
+}
+
+export async function addPublicationImage(
+  id: string,
+  body: AddImageRequest,
+  authHeaders: AuthHeaders,
+): Promise<Publication> {
+  const headers: Record<string, string> = {};
+  if (authHeaders.userId) headers['X-User-Id'] = authHeaders.userId;
+  if (authHeaders.role) headers['X-User-Role'] = authHeaders.role;
+  return requestJson<Publication>(`${config.publicationsBaseUrl}/${id}/images`, {
+    method: 'POST',
+    headers,
+    body,
+  });
+}
