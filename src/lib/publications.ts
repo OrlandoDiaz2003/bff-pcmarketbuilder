@@ -88,3 +88,32 @@ export async function addPublicationImage(
     body,
   });
 }
+
+export interface UpdateStatusRequest {
+  status: PublicationStatus;
+}
+
+export async function updatePublicationStatus(
+  id: string,
+  body: UpdateStatusRequest,
+  authHeaders: AuthHeaders,
+): Promise<Publication> {
+  const headers: Record<string, string> = {};
+  if (authHeaders.userId) headers['X-User-Id'] = authHeaders.userId;
+  if (authHeaders.role) headers['X-User-Role'] = authHeaders.role;
+  return requestJson<Publication>(`${config.publicationsBaseUrl}/${id}/status`, {
+    method: 'PATCH',
+    headers,
+    body,
+  });
+}
+
+export async function deletePublication(id: string, authHeaders: AuthHeaders): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (authHeaders.userId) headers['X-User-Id'] = authHeaders.userId;
+  if (authHeaders.role) headers['X-User-Role'] = authHeaders.role;
+  return requestJson<void>(`${config.publicationsBaseUrl}/${id}`, {
+    method: 'DELETE',
+    headers,
+  });
+}

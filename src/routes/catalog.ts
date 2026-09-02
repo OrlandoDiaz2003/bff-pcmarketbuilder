@@ -5,6 +5,9 @@ import {
   addPublicationImage,
   CreateListingRequest,
   createPublication,
+  deletePublication,
+  updatePublicationStatus,
+  UpdateStatusRequest,
 } from '../lib/publications.js';
 import { getListingDetail, ListingSearchParams, searchListings } from '../services/catalogService.js';
 import { Grade, PublicationStatus } from '../types.js';
@@ -122,6 +125,38 @@ router.post(
       },
     );
     res.status(201).json(updated);
+  }),
+);
+
+router.patch(
+  '/:publicationId/status',
+  asyncHandler(async (req, res) => {
+    const raw = req.params.publicationId;
+    const publicationId = Array.isArray(raw) ? raw[0] : raw;
+    if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
+    const updated = await updatePublicationStatus(
+      publicationId,
+      req.body as UpdateStatusRequest,
+      {
+        userId: req.header('X-User-Id'),
+        role: req.header('X-User-Role'),
+      },
+    );
+    res.json(updated);
+  }),
+);
+
+router.delete(
+  '/:publicationId',
+  asyncHandler(async (req, res) => {
+    const raw = req.params.publicationId;
+    const publicationId = Array.isArray(raw) ? raw[0] : raw;
+    if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
+    await deletePublication(publicationId, {
+      userId: req.header('X-User-Id'),
+      role: req.header('X-User-Role'),
+    });
+    res.status(204).end();
   }),
 );
 
