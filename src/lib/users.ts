@@ -34,3 +34,18 @@ export function getMe(auth: { userId?: string; role?: string }): Promise<UserRes
     headers: userHeaders(auth),
   });
 }
+
+export interface UpdateUserRequest {
+  fullName?: string;
+  bio?: string | null;
+  avatarUrl?: string | null;
+  address?: string | null;
+}
+
+export function updateMe(auth: { userId?: string; role?: string }, body: UpdateUserRequest): Promise<UserResponse> {
+  return requestJson<UserResponse>(`${config.usersBaseUrl}/me`, {
+    method: 'PUT',
+    headers: userHeaders(auth),
+    body,
+  });
+}

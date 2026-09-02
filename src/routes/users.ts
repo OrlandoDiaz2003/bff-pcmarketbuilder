@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import { getMe, syncUser, UserAuthHeaders } from '../lib/users.js';
+import { getMe, syncUser, updateMe, UpdateUserRequest, UserAuthHeaders } from '../lib/users.js';
 
 type AsyncHandler = (req: Request, res: Response) => Promise<unknown>;
 
@@ -33,6 +33,20 @@ router.get(
       userId: req.header('X-User-Id'),
       role: req.header('X-User-Role'),
     });
+    res.json(user);
+  }),
+);
+
+router.put(
+  '/me',
+  asyncHandler(async (req, res) => {
+    const user = await updateMe(
+      {
+        userId: req.header('X-User-Id'),
+        role: req.header('X-User-Role'),
+      },
+      req.body as UpdateUserRequest,
+    );
     res.json(user);
   }),
 );
