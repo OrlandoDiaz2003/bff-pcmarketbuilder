@@ -89,6 +89,34 @@ export async function addPublicationImage(
   });
 }
 
+export async function removePublicationImage(
+  id: string,
+  imageId: string,
+  authHeaders: AuthHeaders,
+): Promise<Publication> {
+  const headers: Record<string, string> = {};
+  if (authHeaders.userId) headers['X-User-Id'] = authHeaders.userId;
+  if (authHeaders.role) headers['X-User-Role'] = authHeaders.role;
+  return requestJson<Publication>(`${config.publicationsBaseUrl}/${id}/images/${imageId}`, {
+    method: 'DELETE',
+    headers,
+  });
+}
+
+export async function setPrimaryImage(
+  id: string,
+  imageId: string,
+  authHeaders: AuthHeaders,
+): Promise<Publication> {
+  const headers: Record<string, string> = {};
+  if (authHeaders.userId) headers['X-User-Id'] = authHeaders.userId;
+  if (authHeaders.role) headers['X-User-Role'] = authHeaders.role;
+  return requestJson<Publication>(`${config.publicationsBaseUrl}/${id}/images/${imageId}/primary`, {
+    method: 'PATCH',
+    headers,
+  });
+}
+
 export interface UpdateStatusRequest {
   status: PublicationStatus;
 }

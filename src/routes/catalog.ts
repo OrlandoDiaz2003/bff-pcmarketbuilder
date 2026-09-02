@@ -6,6 +6,8 @@ import {
   CreateListingRequest,
   createPublication,
   deletePublication,
+  removePublicationImage,
+  setPrimaryImage,
   updatePublicationStatus,
   UpdateStatusRequest,
 } from '../lib/publications.js';
@@ -157,6 +159,40 @@ router.delete(
       role: req.header('X-User-Role'),
     });
     res.status(204).end();
+  }),
+);
+
+router.delete(
+  '/:publicationId/images/:imageId',
+  asyncHandler(async (req, res) => {
+    const raw = req.params.publicationId;
+    const rawImg = req.params.imageId;
+    const publicationId = Array.isArray(raw) ? raw[0] : raw;
+    const imageId = Array.isArray(rawImg) ? rawImg[0] : rawImg;
+    if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
+    if (!imageId) throw new BadRequestError('Falta imageId en la ruta');
+    const updated = await removePublicationImage(publicationId, imageId, {
+      userId: req.header('X-User-Id'),
+      role: req.header('X-User-Role'),
+    });
+    res.json(updated);
+  }),
+);
+
+router.patch(
+  '/:publicationId/images/:imageId/primary',
+  asyncHandler(async (req, res) => {
+    const raw = req.params.publicationId;
+    const rawImg = req.params.imageId;
+    const publicationId = Array.isArray(raw) ? raw[0] : raw;
+    const imageId = Array.isArray(rawImg) ? rawImg[0] : rawImg;
+    if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
+    if (!imageId) throw new BadRequestError('Falta imageId en la ruta');
+    const updated = await setPrimaryImage(publicationId, imageId, {
+      userId: req.header('X-User-Id'),
+      role: req.header('X-User-Role'),
+    });
+    res.json(updated);
   }),
 );
 
