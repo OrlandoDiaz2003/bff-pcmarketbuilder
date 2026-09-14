@@ -203,6 +203,38 @@ CODE=$(curl -s -o "$OUT/me_noauth.json" -w "%{http_code}" -m 8 "$BFF_URL/api/use
 check_status 401 "$CODE" "GET /api/users/me sin headers -> 401"
 
 # ------------------------------------------------------------------
+# 10b. PUT /api/users/me
+# ------------------------------------------------------------------
+echo
+echo "==> PUT $BFF_URL/api/users/me (actualizar perfil)"
+CODE=$(curl -s -o "$OUT/me_put.json" -w "%{http_code}" -m 10 -X PUT "$BFF_URL/api/users/me" \
+  -H "Content-Type: application/json" \
+  -H "X-User-Id: $AZURE_OID" \
+  -H "X-User-Role: $ROLE" \
+  -d '{"bio":"Bio prueba test-bff","address":"Av. Prueba 123"}')
+check_status 200 "$CODE" "PUT /api/users/me con headers -> 200"
+if [ "$CODE" = "200" ]; then
+  ME_BIO=$(jq -r '.bio // empty' "$OUT/me_put.json" 2>/dev/null)
+  [ "$ME_BIO" = "Bio prueba test-bff" ] && ok "bio actualizada" || fail "bio no coincide ($ME_BIO)"
+fi
+
+echo
+echo "==> PUT $BFF_URL/api/users/me (restaurar datos originales)"
+CODE=$(curl -s -o "$OUT/me_put_restore.json" -w "%{http_code}" -m 10 -X PUT "$BFF_URL/api/users/me" \
+  -H "Content-Type: application/json" \
+  -H "X-User-Id: $AZURE_OID" \
+  -H "X-User-Role: $ROLE" \
+  -d '{"bio":"Vendo GPUs usadas con garantía","address":"Av. Siempre Viva 123"}')
+check_status 200 "$CODE" "PUT /api/users/me restaurar -> 200"
+
+echo
+echo "==> PUT $BFF_URL/api/users/me (sin headers)"
+CODE=$(curl -s -o "$OUT/me_put_noauth.json" -w "%{http_code}" -m 10 -X PUT "$BFF_URL/api/users/me" \
+  -H "Content-Type: application/json" \
+  -d '{"bio":"x"}')
+check_status 401 "$CODE" "PUT /api/users/me sin headers -> 401"
+
+# ------------------------------------------------------------------
 # 11. POST /api/listings/:id/images (usa la publicación creada arriba)
 # ------------------------------------------------------------------
 if [ -n "${NEW_ID:-}" ]; then
@@ -233,11 +265,143 @@ if [ -n "${NEW_ID:-}" ]; then
   echo "==> POST $BFF_URL/api/listings/$NEW_ID/images (sin headers)"
   CODE=$(curl -s -o "$OUT/img_noauth.json" -w "%{http_code}" -m 10 -X POST "$BFF_URL/api/listings/$NEW_ID/images" \
     -H "Content-Type: application/json" \
-    -d '{"imageUrl":"https://img/sin-auth.jpg"}')
-  check_status 400 "$CODE" "POST /api/listings/:id/images sin headers -> 400"
+    -d '{"imageUrl":"https://img/sin-auth.jpg","isPrimary":false}')
+  check_status 401 "$CODE" "POST /api/listings/:id/images sin headers -> 401"
+
+  echo
+  echo "==> POST $BFF_URL/api/listings/$NEW_ID/images (segunda, no primaria)"
+  CODE=$(curl -s -o "$OUT/img2.json" -w "%{http_code}" -m 10 -X POST "$BFF_URL/api/listings/$NEW_ID/images" \
+    -H "Content-Type: application/json" \
+    -H "X-User-Id: $AZURE_OID" \
+    -H "X-User-Role: $ROLE" \
+    -d '{"imageUrl":"https://img/secundaria.jpg","isPrimary":false}')
+  check_status 201 "$CODE" "POST /api/listings/:id/images segunda -> 201"
+  if [ "$CODE" = "201" ]; then
+    N_PRIMARIA=$(jq '[.images[] | select(.isPrimary==true)] | length' "$OUT/img2.json" 2>/dev/null || echo 0)
+    [ "$N_PRIMARIA" = "1" ] && ok "solo hay una imagen primaria" || fail "hay $N_PRIMARIA primarias"
+    IMG1_ID=$(jq -r '.images[] | select(.isPrimary==true) | .imageId' "$OUT/img2.json" 2>/dev/null)
+    IMG2_ID=$(jq -r '.images[] | select(.isPrimary==false) | .imageId' "$OUT/img2.json" 2>/dev/null)
+    echo "   IMG1(primary)=$IMG1_ID IMG2(noprimary)=$IMG2_ID"
+  fi
+
+  echo
+  echo "==> PATCH $BFF_URL/api/listings/$NEW_ID/images/$IMG2_ID/primary"
+  CODE=$(curl -s -o "$OUT/img_primary.json" -w "%{http_code}" -m 10 -X PATCH \
+    "$BFF_URL/api/listings/$NEW_ID/images/$IMG2_ID/primary" \
+    -H "X-User-Id: $AZURE_OID" -H "X-User-Role: $ROLE")
+  check_status 200 "$CODE" "PATCH /images/:id/primary dueño -> 200"
+  if [ "$CODE" = "200" ]; then
+    IMG2_PRIMARY=$(jq --arg id "$IMG2_ID" '.images[] | select(.imageId == $id) | .isPrimary' "$OUT/img_primary.json" 2>/dev/null)
+    [ "$IMG2_PRIMARY" = "true" ] && ok "la imagen marcada como primaria" || fail "no quedó primaria ($IMG2_PRIMARY)"
+  fi
+
+  echo
+  echo "==> PATCH $BFF_URL/api/listings/$NEW_ID/images/$IMG2_ID/primary (no-dueño)"
+  CODE=$(curl -s -o "$OUT/img_primary_forbidden.json" -w "%{http_code}" -m 10 -X PATCH \
+    "$BFF_URL/api/listings/$NEW_ID/images/$IMG2_ID/primary" \
+    -H "X-User-Id: $OTHER_OID" -H "X-User-Role: $ROLE")
+  check_status 403 "$CODE" "PATCH /images/:id/primary no-dueño -> 403"
+
+  echo
+  echo "==> PATCH $BFF_URL/api/listings/$NEW_ID/images/$IMG2_ID/primary (sin headers)"
+  CODE=$(curl -s -o "$OUT/img_primary_noauth.json" -w "%{http_code}" -m 10 -X PATCH \
+    "$BFF_URL/api/listings/$NEW_ID/images/$IMG2_ID/primary")
+  check_status 401 "$CODE" "PATCH /images/:id/primary sin headers -> 401"
+
+  echo
+  echo "==> DELETE $BFF_URL/api/listings/$NEW_ID/images/$IMG1_ID (dueño)"
+  CODE=$(curl -s -o "$OUT/img_remove.json" -w "%{http_code}" -m 10 -X DELETE \
+    "$BFF_URL/api/listings/$NEW_ID/images/$IMG1_ID" \
+    -H "X-User-Id: $AZURE_OID" -H "X-User-Role: $ROLE")
+  check_status 200 "$CODE" "DELETE /images/:id dueño -> 200"
+
+  echo
+  echo "==> DELETE $BFF_URL/api/listings/$NEW_ID/images/$IMG1_ID (no-dueño)"
+  CODE=$(curl -s -o "$OUT/img_remove_forbidden.json" -w "%{http_code}" -m 10 -X DELETE \
+    "$BFF_URL/api/listings/$NEW_ID/images/$IMG1_ID" \
+    -H "X-User-Id: $OTHER_OID" -H "X-User-Role: $ROLE")
+  check_status 403 "$CODE" "DELETE /images/:id no-dueño -> 403"
+
+  echo
+  echo "==> DELETE $BFF_URL/api/listings/$NEW_ID/images/$IMG1_ID (sin headers)"
+  CODE=$(curl -s -o "$OUT/img_remove_noauth.json" -w "%{http_code}" -m 10 -X DELETE \
+    "$BFF_URL/api/listings/$NEW_ID/images/$IMG1_ID")
+  check_status 401 "$CODE" "DELETE /images/:id sin headers -> 401"
 else
   echo
   echo "  (no se pudo crear publicación para probar el endpoint de imágenes)"
+fi
+
+# ------------------------------------------------------------------
+# 11b. PATCH /api/listings/:id/status (solo WORKSHOP_ADMIN)
+# ------------------------------------------------------------------
+if [ -n "${NEW_ID:-}" ]; then
+  echo
+  echo "==> PATCH $BFF_URL/api/listings/$NEW_ID/status (rol BUYER_SELLER)"
+  CODE=$(curl -s -o "$OUT/status_forbidden.json" -w "%{http_code}" -m 10 -X PATCH \
+    "$BFF_URL/api/listings/$NEW_ID/status" \
+    -H "Content-Type: application/json" \
+    -H "X-User-Id: $AZURE_OID" \
+    -H "X-User-Role: $ROLE" \
+    -d '{"status":"RESERVED"}')
+  check_status 403 "$CODE" "PATCH /status con BUYER_SELLER -> 403"
+
+  echo
+  echo "==> PATCH $BFF_URL/api/listings/$NEW_ID/status (WORKSHOP_ADMIN)"
+  CODE=$(curl -s -o "$OUT/status_admin.json" -w "%{http_code}" -m 10 -X PATCH \
+    "$BFF_URL/api/listings/$NEW_ID/status" \
+    -H "Content-Type: application/json" \
+    -H "X-User-Id: $AZURE_OID" \
+    -H "X-User-Role: WORKSHOP_ADMIN" \
+    -d '{"status":"RESERVED"}')
+  check_status 200 "$CODE" "PATCH /status con WORKSHOP_ADMIN -> 200"
+  if [ "$CODE" = "200" ]; then
+    ST=$(jq -r '.status // empty' "$OUT/status_admin.json" 2>/dev/null)
+    [ "$ST" = "RESERVED" ] && ok "status cambió a RESERVED" || fail "status != RESERVED ($ST)"
+  fi
+
+  echo
+  echo "==> PATCH $BFF_URL/api/listings/$NEW_ID/status (volver a ACTIVE)"
+  CODE=$(curl -s -o "$OUT/status_active.json" -w "%{http_code}" -m 10 -X PATCH \
+    "$BFF_URL/api/listings/$NEW_ID/status" \
+    -H "Content-Type: application/json" \
+    -H "X-User-Id: $AZURE_OID" \
+    -H "X-User-Role: WORKSHOP_ADMIN" \
+    -d '{"status":"ACTIVE"}')
+  check_status 200 "$CODE" "PATCH /status volver a ACTIVE -> 200"
+
+  echo
+  echo "==> PATCH $BFF_URL/api/listings/$NEW_ID/status (sin headers)"
+  CODE=$(curl -s -o "$OUT/status_noauth.json" -w "%{http_code}" -m 10 -X PATCH \
+    "$BFF_URL/api/listings/$NEW_ID/status" \
+    -H "Content-Type: application/json" \
+    -d '{"status":"ACTIVE"}')
+  check_status 401 "$CODE" "PATCH /status sin headers -> 401"
+else
+  echo
+  echo "  (no hay publicación para probar PATCH /status)"
+fi
+
+# ------------------------------------------------------------------
+# 11c. DELETE /api/listings/:id
+# ------------------------------------------------------------------
+if [ -n "${NEW_ID:-}" ]; then
+  echo
+  echo "==> DELETE $BFF_URL/api/listings/$NEW_ID"
+  CODE=$(curl -s -o "$OUT/deleted.json" -w "%{http_code}" -m 10 -X DELETE \
+    "$BFF_URL/api/listings/$NEW_ID" \
+    -H "X-User-Id: $AZURE_OID" \
+    -H "X-User-Role: $ROLE")
+  check_status 204 "$CODE" "DELETE /api/listings/:id -> 204"
+
+  echo
+  echo "==> GET $BFF_URL/api/listings/$NEW_ID (ya borrada)"
+  CODE=$(curl -s -o "$OUT/after_delete.json" -w "%{http_code}" -m 8 \
+    "$BFF_URL/api/listings/$NEW_ID")
+  check_status 404 "$CODE" "GET publicación borrada -> 404"
+else
+  echo
+  echo "  (no hay publicación para probar DELETE)"
 fi
 
 # ------------------------------------------------------------------
