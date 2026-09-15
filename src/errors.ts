@@ -19,7 +19,7 @@ export class NotFoundError extends HttpError {
     super(message, 404);
   }
 }
-
+// error por que 
 export class UpstreamError extends HttpError {
   constructor(
     message: string,

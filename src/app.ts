@@ -6,6 +6,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import catalogRouter from './routes/catalog.js';
 import categoriesRouter from './routes/categories.js';
 import healthRouter from './routes/health.js';
+import productsRouter from './routes/products.js';
 import usersRouter from './routes/users.js';
 
 export function createApp(): Express {
@@ -17,6 +18,7 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/api/listings', catalogRouter);
   app.use('/api/categories', categoriesRouter);
+  app.use('/api/products', productsRouter);
   app.use('/api/users', usersRouter);
 
   app.use(notFoundHandler);

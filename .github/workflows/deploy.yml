@@ -1,0 +1,57 @@
+name: Publicar imagen docker en aws
+
+on:
+  push:
+    branches:
+      - aws
+
+jobs:
+  build-and-push-main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo del repo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias y compilar
+        run: |
+          npm ci
+          npm run build
+
+      - name: Configurar credenciales de aws
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Iniciar sesion en aws ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Crear repositorio ECR si no existe
+        run: |
+          aws ecr describe-repositories --repository-names bffpcbuilder --region ${{ secrets.AWS_REGION }} || \
+          aws ecr create-repository --repository-name bffpcbuilder --region ${{ secrets.AWS_REGION }}
+
+      - name: Construir y publicar en aws
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/bffpcbuilder:latest
+
+      - name: Forzar nuevo deployment en ECS
+        run: |
+          aws ecs update-service \
+            --cluster pcbuildercluster \
+            --service pcbuildercluster \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}

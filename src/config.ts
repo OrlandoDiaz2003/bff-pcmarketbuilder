@@ -15,9 +15,9 @@ const urlFromEnv = (name: string, fallback: string): string =>
 
 export const config = {
   port: numberFromEnv('PORT', 4000),
-  publicationsBaseUrl: urlFromEnv('PUBLICATIONS_BASE_URL', 'http://localhost:8083/api/v1/publications'),
-  productsBaseUrl: urlFromEnv('PRODUCTS_BASE_URL', 'http://localhost:8080/api/v1/products'),
-  usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://localhost:8081/api/v1/users'),
+  publicationsBaseUrl: urlFromEnv('PUBLICATIONS_BASE_URL', 'http://100.55.98.236:8083/api/v1/publications'),
+  productsBaseUrl: urlFromEnv('PRODUCTS_BASE_URL', 'http://34.239.255.125:8082/api/v1/products'),
+  usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://100.54.104.174:8081/api/v1/users'),
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),

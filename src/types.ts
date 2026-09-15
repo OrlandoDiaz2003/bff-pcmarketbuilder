@@ -88,6 +88,18 @@ export interface Seller {
 
 export type UserRole = 'BUYER_SELLER' | 'TECHNICAL_AGENT' | 'WORKSHOP_ADMIN';
 
+// Resumen de una publicación del vendedor, tal como lo arma ms-user
+// (Dto.PublicationSummary) resolviendo contra publication-service.
+export interface UserPublicationSummary {
+  publicationId: string;
+  title: string;
+  price: number;
+  grade: Grade;
+  status: PublicationStatus;
+  primaryImage: string | null;
+  createdAt: string;
+}
+
 export interface UserResponse {
   userId: string;
   username: string;
@@ -98,6 +110,8 @@ export interface UserResponse {
   address: string | null;
   role: UserRole;
   createdAt: string;
+  publicationsCount: number;
+  publications: UserPublicationSummary[];
 }
 
 export interface ListingCard {

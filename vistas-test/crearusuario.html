@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace - Crear usuario</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f3f4f6; color: #111827; }
+    header { background: #111827; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    header h1 { font-size: 18px; }
+    header a { color: #a5b4fc; font-size: 14px; }
+    main { max-width: 480px; margin: 40px auto; padding: 0 24px; }
+    .card { background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .card h2 { font-size: 20px; margin-bottom: 6px; }
+    .card p.hint { color: #6b7280; font-size: 13px; margin-bottom: 20px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+    .field input, .field select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; }
+    .oidBox { display: flex; gap: 8px; align-items: center; }
+    .oidBox input { flex: 1; font-family: monospace; font-size: 12px; background: #f9fafb; color: #6b7280; }
+    .oidBox button { padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; cursor: pointer; font-size: 13px; }
+    .oidBox button:hover { background: #f3f4f6; }
+    button.submit { width: 100%; padding: 12px; border: 0; border-radius: 8px; background: #7c3aed; color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 4px; }
+    button.submit:hover { background: #6d28d9; }
+    button.submit:disabled { background: #c4b5fd; cursor: not-allowed; }
+    #formError { color: #b91c1c; font-size: 13px; margin-bottom: 14px; display: none; }
+    #successBox { display: none; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px; margin-top: 16px; }
+    #successBox h3 { color: #065f46; font-size: 15px; margin-bottom: 8px; }
+    #successBox table { width: 100%; font-size: 13px; }
+    #successBox td { padding: 3px 0; }
+    #successBox td:first-child { color: #047857; width: 40%; }
+    .actions { display: flex; gap: 8px; margin-top: 14px; }
+    .actions a { flex: 1; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .actions a.primary { background: #7c3aed; color: #fff; }
+    .actions a.secondary { background: #e5e7eb; color: #111827; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Marketplace PC Parts · Crear usuario</h1>
+    <a href="view.html">← Volver al listado</a>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Registrarte (ms-user)</h2>
+      <p class="hint">Esto llama al BFF (<code>POST /api/users/sync</code>), que provisiona el usuario en <strong>ms-user</strong> — así se comprueba que el microservicio de usuario funciona de punta a punta.</p>
+
+      <div id="formError"></div>
+
+      <form id="registerForm">
+        <div class="field">
+          <label for="oidInput">azure_oid (generado automáticamente)</label>
+          <div class="oidBox">
+            <input id="oidInput" readonly />
+            <button type="button" id="regenBtn" title="Generar otro ID">🔄</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="emailInput">Email</label>
+          <input id="emailInput" type="email" required placeholder="tu.nombre@pcmarketbuilder.onmicrosoft.com" />
+        </div>
+        <div class="field">
+          <label for="nameInput">Nombre completo</label>
+          <input id="nameInput" required placeholder="Ej: Ana Vendedora" />
+        </div>
+        <div class="field">
+          <label for="roleInput">Rol</label>
+          <select id="roleInput">
+            <option value="BUYER_SELLER">BUYER_SELLER</option>
+            <option value="WORKSHOP_ADMIN">WORKSHOP_ADMIN</option>
+          </select>
+        </div>
+        <button type="submit" class="submit" id="submitBtn">Registrarme</button>
+      </form>
+
+      <div id="successBox">
+        <h3>✔ Usuario creado en ms-user</h3>
+        <table>
+          <tr><td>username</td><td id="outUsername"></td></tr>
+          <tr><td>userId (interno)</td><td id="outUserId"></td></tr>
+          <tr><td>azure_oid</td><td id="outOid"></td></tr>
+          <tr><td>role</td><td id="outRole"></td></tr>
+          <tr><td>createdAt</td><td id="outCreatedAt"></td></tr>
+        </table>
+        <div class="actions">
+          <a href="view.html" class="primary">Ir al listado</a>
+          <a href="#" class="secondary" id="anotherBtn">Registrar otro usuario</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const BFF = 'http://localhost:4000';
+    const SESSION_KEY = 'bff_session';
+
+    function generateOid() {
+      if (crypto.randomUUID) return crypto.randomUUID();
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+      });
+    }
+
+    const oidInput = document.getElementById('oidInput');
+    oidInput.value = generateOid();
+    document.getElementById('regenBtn').addEventListener('click', () => {
+      oidInput.value = generateOid();
+    });
+
+    async function register(event) {
+      event.preventDefault();
+      const errBox = document.getElementById('formError');
+      errBox.style.display = 'none';
+      const submitBtn = document.getElementById('submitBtn');
+
+      const azureOid = oidInput.value;
+      const email = document.getElementById('emailInput').value.trim();
+      const name = document.getElementById('nameInput').value.trim();
+      const role = document.getElementById('roleInput').value;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Registrando…';
+
+      try {
+        const res = await fetch(`${BFF}/api/users/sync`, {
+          method: 'POST',
+          headers: {
+            'X-User-Id': azureOid,
+            'X-User-Role': role,
+            'X-User-Email': email,
+            'X-User-Name': name,
+          },
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.message || `HTTP ${res.status}`);
+
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ azureOid, role, username: body.username }));
+
+        document.getElementById('outUsername').textContent = `@${body.username}`;
+        document.getElementById('outUserId').textContent = body.userId;
+        document.getElementById('outOid').textContent = azureOid;
+        document.getElementById('outRole').textContent = body.role;
+        document.getElementById('outCreatedAt').textContent = body.createdAt;
+
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('successBox').style.display = 'block';
+      } catch (err) {
+        errBox.textContent = `No se pudo registrar: ${err.message}`;
+        errBox.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Registrarme';
+      }
+    }
+
+    document.getElementById('registerForm').addEventListener('submit', register);
+    document.getElementById('anotherBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('registerForm').reset();
+      oidInput.value = generateOid();
+      document.getElementById('registerForm').style.display = 'block';
+      document.getElementById('successBox').style.display = 'none';
+    });
+  </script>
+</body>
+</html>

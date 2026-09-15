@@ -10,6 +10,19 @@
     header { background: #111827; color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; }
     header h1 { font-size: 20px; }
     #count { font-size: 14px; color: #9ca3af; }
+
+    #sessionBar { background: #1f2937; color: #e5e7eb; padding: 10px 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+    #sessionBar input, #sessionBar select { padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: #111827; color: #fff; font-size: 13px; }
+    #sessionBar input::placeholder { color: #6b7280; }
+    #sessionBar button, #sessionBar a.btn-secondary { padding: 6px 14px; border: 0; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
+    .btn-primary { background: #7c3aed; color: #fff; }
+    .btn-primary:hover { background: #6d28d9; }
+    .btn-secondary { background: #374151; color: #fff; }
+    .btn-secondary:hover { background: #4b5563; }
+    #sessionInfo { display: none; align-items: center; gap: 10px; }
+    #sessionInfo strong { color: #a5b4fc; }
+    #sessionError { color: #fca5a5; font-size: 12px; width: 100%; }
+
     main { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
     #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
     .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.1); cursor: pointer; }
@@ -25,6 +38,17 @@
     .badge.grade { background: #fff7ed; color: #9a3412; }
     #status { padding: 24px; text-align: center; color: #6b7280; }
     #status.error { color: #b91c1c; }
+
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(17,24,39,.55); align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+    .overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 18px; margin-bottom: 16px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 9px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    #formError { color: #b91c1c; font-size: 13px; margin-bottom: 10px; display: none; }
   </style>
 </head>
 <body>
@@ -32,18 +56,235 @@
     <h1>Marketplace PC Parts</h1>
     <span id="count">cargando…</span>
   </header>
+
+  <div id="sessionBar">
+    <div id="sessionForm" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <input id="loginOid" placeholder="azure_oid (X-User-Id)" style="width:220px" />
+      <input id="loginEmail" placeholder="email (solo 1ra vez)" style="width:200px" />
+      <input id="loginName" placeholder="nombre completo" style="width:160px" />
+      <select id="loginRole">
+        <option value="BUYER_SELLER">BUYER_SELLER</option>
+        <option value="WORKSHOP_ADMIN">WORKSHOP_ADMIN</option>
+      </select>
+      <button class="btn-primary" id="loginBtn">Iniciar sesión</button>
+      <a href="crearusuario.html" class="btn-secondary" style="text-decoration:none; display:inline-block;">👤 Crear usuario nuevo</a>
+    </div>
+    <div id="sessionInfo">
+      <span>Conectado como <strong id="sessionUsername"></strong> (<span id="sessionRole"></span>)</span>
+      <button class="btn-primary" id="addProductBtn">+ Agregar producto</button>
+      <button class="btn-secondary" id="logoutBtn">Cerrar sesión</button>
+    </div>
+    <div id="sessionError"></div>
+  </div>
+
   <main>
     <div id="status">Cargando publicaciones…</div>
     <div id="grid"></div>
   </main>
 
+  <div class="overlay" id="modalOverlay">
+    <div class="modal">
+      <h2>Publicar un producto</h2>
+
+      <div id="formError"></div>
+      <form id="listingForm">
+
+        <div class="field">
+          <label for="productSelect">Producto del catálogo</label>
+          <span id="productSelectError" class="error"></span>
+          <select id="productSelect" required></select>
+        </div>
+        <div class="field">
+          <label for="titleInput">Título de la publicación</label>
+          <input id="titleInput" required maxlength="150" placeholder="Ej: RTX 3090 usada, poco uso" />
+        </div>
+        <div class="field">
+          <label for="descriptionInput">Descripción (opcional)</label>
+          <textarea id="descriptionInput" placeholder="Estado, detalles, motivo de venta…"></textarea>
+        </div>
+        <div class="field">
+          <label for="priceInput">Precio (CLP)</label>
+          <input id="priceInput" type="number" min="0" required placeholder="250000" />
+        </div>
+        <div class="field">
+          <label for="gradeSelect">Grado</label>
+          <select id="gradeSelect">
+            <option value="GRADE_A">GRADE_A</option>
+            <option value="GRADE_B">GRADE_B</option>
+            <option value="GRADE_C">GRADE_C</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="usageInput">Tiempo de uso en meses (opcional)</label>
+          <input id="usageInput" type="number" min="0" placeholder="6" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelBtn">Cancelar</button>
+          <button type="submit" class="btn-primary" id="submitBtn">Publicar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     const BFF = 'http://localhost:4000';
+    const SESSION_KEY = 'bff_session';
+
+    function getSession() {
+      try {
+        return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+      } catch {
+        return null;
+      }
+    }
+
+    function setSession(session) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      renderSession();
+    }
+
+    function clearSession() {
+      localStorage.removeItem(SESSION_KEY);
+      renderSession();
+    }
+
+    function authHeaders() {
+      const session = getSession();
+      if (!session) return {};
+      return { 'X-User-Id': session.azureOid, 'X-User-Role': session.role };
+    }
+
+    function renderSession() {
+      const session = getSession();
+      const form = document.getElementById('sessionForm');
+      const info = document.getElementById('sessionInfo');
+      if (session) {
+        form.style.display = 'none';
+        info.style.display = 'flex';
+        document.getElementById('sessionUsername').textContent = `@${session.username}`;
+        document.getElementById('sessionRole').textContent = session.role;
+      } else {
+        form.style.display = 'flex';
+        info.style.display = 'none';
+      }
+    }
+
+    async function login() {
+      const errorBox = document.getElementById('sessionError');
+      errorBox.textContent = '';
+      const azureOid = document.getElementById('loginOid').value.trim();
+      const email = document.getElementById('loginEmail').value.trim();
+      const name = document.getElementById('loginName').value.trim();
+      const role = document.getElementById('loginRole').value;
+
+      if (!azureOid) {
+        errorBox.textContent = 'Falta el azure_oid.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BFF}/api/users/sync`, {
+          method: 'POST',
+          headers: {
+            'X-User-Id': azureOid,
+            'X-User-Role': role,
+            ...(email ? { 'X-User-Email': email } : {}),
+            ...(name ? { 'X-User-Name': name } : {}),
+          },
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.message || `HTTP ${res.status}`);
+        setSession({ azureOid, role, username: body.username });
+      } catch (err) {
+        errorBox.textContent = `No se pudo iniciar sesión: ${err.message}`;
+      }
+    }
+
+    function logout() {
+      clearSession();
+    }
+
+    let productsCache = null;
+
+    async function loadProductsIntoSelect() {
+      const select = document.getElementById('productSelect');
+      select.innerHTML = '<option>Cargando…</option>';
+      if (!productsCache) {
+        const res = await fetch(`${BFF}/api/products`);
+        if (!res.ok) throw new Error(`No se pudo cargar el catálogo (HTTP ${res.status})`);
+        productsCache = await res.json();
+      }
+      select.innerHTML = '';
+      for (const p of productsCache) {
+        const opt = document.createElement('option');
+        opt.value = p.productId;
+        opt.textContent = `${p.brand} ${p.model} · ${p.subcategoryName}`;
+        select.appendChild(opt);
+      }
+    }
+
+    async function openModal() {
+      document.getElementById('formError').style.display = 'none';
+      document.getElementById('listingForm').reset();
+      document.getElementById('modalOverlay').classList.add('open');
+      try {
+        await loadProductsIntoSelect();
+      } catch (err) {
+        const errBox = document.getElementById('formError');
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+
+    async function submitListing(event) {
+      event.preventDefault();
+      const errBox = document.getElementById('formError');
+      errBox.style.display = 'none';
+
+      const productId = document.getElementById('productSelect').value;
+      const title = document.getElementById('titleInput').value.trim();
+      const description = document.getElementById('descriptionInput').value.trim();
+      const price = Number(document.getElementById('priceInput').value);
+      const grade = document.getElementById('gradeSelect').value;
+      const usageRaw = document.getElementById('usageInput').value;
+
+      const body = {
+        productId,
+        title,
+        price,
+        grade,
+        ...(description ? { description } : {}),
+        ...(usageRaw ? { usageTimeMonths: Number(usageRaw) } : {}),
+      };
+
+      try {
+        const res = await fetch(`${BFF}/api/listings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+        closeModal();
+        load();
+      } catch (err) {
+        errBox.textContent = `No se pudo publicar: ${err.message}`;
+        errBox.style.display = 'block';
+      }
+    }
 
     async function load() {
       const status = document.getElementById('status');
       const grid = document.getElementById('grid');
       const count = document.getElementById('count');
+      grid.innerHTML = '';
+      status.className = '';
+      status.style.display = 'block';
+      status.textContent = 'Cargando publicaciones…';
 
       try {
         const res = await fetch(`${BFF}/api/listings?status=ACTIVE&page=1&limit=20`);
@@ -56,7 +297,7 @@
         }
 
         count.textContent = `${page.totalElements} publicaciones`;
-        status.remove();
+        status.style.display = 'none';
 
         const fragment = document.createDocumentFragment();
         for (const item of page.content) {
@@ -110,10 +351,21 @@
         grid.appendChild(fragment);
       } catch (err) {
         status.classList.add('error');
+        status.style.display = 'block';
         status.textContent = `Error: ${err.message}. ¿Está corriendo el BFF en ${BFF}?`;
       }
     }
 
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('addProductBtn').addEventListener('click', openModal);
+    document.getElementById('cancelBtn').addEventListener('click', closeModal);
+    document.getElementById('listingForm').addEventListener('submit', submitListing);
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'modalOverlay') closeModal();
+    });
+
+    renderSession();
     load();
   </script>
 </body>
