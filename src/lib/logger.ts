@@ -12,6 +12,7 @@ function writeToFile(line: string): void {
     });
 }
 
+
 export function log(message: string): void {
   console.log(message);
   writeToFile(message);
