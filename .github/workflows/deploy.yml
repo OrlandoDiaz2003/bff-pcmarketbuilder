@@ -52,6 +52,6 @@ jobs:
         run: |
           aws ecs update-service \
             --cluster pcbuildercluster \
-            --service pcbuildercluster \
+            --service Tareabffpcbuilder-service-t51e6eq9 \
             --force-new-deployment \
             --region ${{ secrets.AWS_REGION }}
