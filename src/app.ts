@@ -10,6 +10,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import catalogRouter from './routes/catalog.js';
 import categoriesRouter from './routes/categories.js';
 import healthRouter from './routes/health.js';
+import productsRouter from './routes/products.js';
 import usersRouter from './routes/users.js';
 
 export function createApp(): Express {
@@ -17,7 +18,12 @@ export function createApp(): Express {
 
   const corsOptions: cors.CorsOptions = {
     origin(origin, callback) {
-      if (!origin || config.corsOrigins.includes(origin)) {
+      // GitbHub Pages sirve el Origin en minusculas; normalizar para no depender del caso.
+      const normalize = (value: string) => value.toLowerCase().replace(/\/+$/, '');
+      if (
+        !origin ||
+        config.corsOrigins.some((allowed) => normalize(allowed) === normalize(origin))
+      ) {
         callback(null, true);
       } else {
         callback(new HttpError(`Origen no permitido por CORS: ${origin}`, 403));
@@ -43,6 +49,7 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/api/listings', catalogRouter);
   app.use('/api/categories', categoriesRouter);
+  app.use('/api/products', productsRouter);
   app.use('/api/users', usersRouter);
 
   app.use(notFoundHandler);
