@@ -21,7 +21,8 @@ export async function generateSelfSignedCert(hosts: string[]): Promise<TlsCert> 
   notAfterDate.setDate(notAfterDate.getDate() + 825);
 
   const pems = await generate([{ name: 'commonName', value: hosts[0] }], {
-    keySize: 2048,
+    keyType: 'ec',
+    curve: 'P-256',
     algorithm: 'sha256',
     notBeforeDate,
     notAfterDate,
