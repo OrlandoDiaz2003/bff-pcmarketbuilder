@@ -26,7 +26,7 @@ export const config = {
   catalogPageSize: 100,
   // Hosts que va a llevar el SAN del certificado autofirmado (ver src/lib/tls.ts).
   // Agrega aquí la IP pública/privada actual del task de ECS si cambia.
-  tlsHosts: (process.env.TLS_HOSTS || 'localhost,127.0.0.1,18.213.192.99,172.31.3.73')
+  tlsHosts: (process.env.TLS_HOSTS || 'localhost,127.0.0.1,98.92.64.170,172.31.3.73')
     .split(',')
     .map((h) => h.trim())
     .filter(Boolean),
