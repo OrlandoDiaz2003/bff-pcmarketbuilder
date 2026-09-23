@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import { searchProducts } from '../lib/products.js';
+import { getProduct, searchProducts } from '../lib/products.js';
 
 type AsyncHandler = (req: Request, res: Response) => Promise<unknown>;
 
@@ -24,6 +24,13 @@ router.get(
       limit: limit !== undefined ? Number(limit) : undefined,
     });
     res.json(result);
+  }),
+);
+
+router.get(
+  '/:productId',
+  asyncHandler(async (req, res) => {
+    res.json(await getProduct(String(req.params.productId)));
   }),
 );
 

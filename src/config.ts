@@ -1,5 +1,6 @@
 import 'dotenv/config';
 
+// 1. Funciones utilitarias para procesar las variables de entorno
 const numberFromEnv = (name: string, fallback: number): number => {
   const raw = process.env[name];
   if (raw === undefined || raw === '') return fallback;
@@ -13,12 +14,28 @@ const numberFromEnv = (name: string, fallback: number): number => {
 const urlFromEnv = (name: string, fallback: string): string =>
   (process.env[name] ?? fallback).replace(/\/+$/, '');
 
+const listFromEnv = (name: string, fallback: string[]): string[] => {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === '') return fallback;
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
 export const config = {
   port: numberFromEnv('PORT', 4000),
   httpsPort: numberFromEnv('HTTPS_PORT', 4443),
   publicationsBaseUrl: urlFromEnv('PUBLICATIONS_BASE_URL', 'http://100.55.98.236:8083/api/v1/publications'),
   productsBaseUrl: urlFromEnv('PRODUCTS_BASE_URL', 'http://34.239.255.125:8082/api/v1/products'),
   usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://100.54.104.174:8081/api/v1/users'),
+  // GitHub Pages (front desplegado) + Angular local.
+  corsOrigins: listFromEnv('CORS_ORIGINS', ['https://sotom28.github.io', 'http://localhost:4200']),
+  // Identificadores públicos del App Registration (no son secretos; el front ya los expone).
+  azureTenantId: process.env.AZURE_TENANT_ID || '35365687-614a-481c-8b8b-b4debee24880',
+  azureClientId: process.env.AZURE_CLIENT_ID || '6c2342af-22f6-4de8-a545-2a3b04e7d1ff',
+  // Solo desarrollo local: acepta X-User-* del cliente cuando no hay Bearer (ver authMiddleware.ts).
+  allowUnverifiedIdentity: process.env.ALLOW_UNVERIFIED_IDENTITY === 'true',
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),
