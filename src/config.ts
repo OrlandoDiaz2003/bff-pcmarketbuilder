@@ -14,19 +14,23 @@ const numberFromEnv = (name: string, fallback: number): number => {
 const urlFromEnv = (name: string, fallback: string): string =>
   (process.env[name] ?? fallback).replace(/\/+\$/, '');
 
-// 2. Base URL construida a partir de la API Gateway (opcional, por si la necesitas en el objeto config)
-const apiGatewayUrl = process.env.API_GATEWAY_URL || '';
+const listFromEnv = (name: string, fallback: string[]): string[] => {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === '') return fallback;
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
 
-// 3. Exportación única del objeto de configuración
 export const config = {
   port: numberFromEnv('PORT', 4000),
-  httpsPort: numberFromEnv('HTTPS_PORT', 4444),
-  
-  // Apis usando las funciones utilitarias o API Gateway como fallback
-  publicationsBaseUrl: urlFromEnv('PUBLICATIONS_BASE_URL', `${apiGatewayUrl}/publicacion/api/v1/publications`),
-  productsBaseUrl: urlFromEnv('PRODUCTS_BASE_URL', `${apiGatewayUrl}/producto/api/v1/products`),
-  usersBaseUrl: urlFromEnv('USERS_BASE_URL', `${apiGatewayUrl}/usuarios/api/v1/users`),
-  
+  publicationsBaseUrl: urlFromEnv('PUBLICATIONS_BASE_URL', 'http://localhost:8083/api/v1/publications'),
+  productsBaseUrl: urlFromEnv('PRODUCTS_BASE_URL', 'http://localhost:8080/api/v1/products'),
+  usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://localhost:8081/api/v1/users'),
+  corsOrigins: listFromEnv('CORS_ORIGINS', ['http://localhost:4200']),
+  azureTenantId: process.env.AZURE_TENANT_ID ?? '',
+  azureClientId: process.env.AZURE_CLIENT_ID ?? '',
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),
