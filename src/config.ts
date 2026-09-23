@@ -12,7 +12,7 @@ const numberFromEnv = (name: string, fallback: number): number => {
 };
 
 const urlFromEnv = (name: string, fallback: string): string =>
-  (process.env[name] ?? fallback).replace(/\/+\$/, '');
+  (process.env[name] ?? fallback).replace(/\/+$/, '');
 
 const listFromEnv = (name: string, fallback: string[]): string[] => {
   const raw = process.env[name];
@@ -31,6 +31,8 @@ export const config = {
   corsOrigins: listFromEnv('CORS_ORIGINS', ['http://localhost:4200']),
   azureTenantId: process.env.AZURE_TENANT_ID ?? '',
   azureClientId: process.env.AZURE_CLIENT_ID ?? '',
+  // Solo desarrollo local: acepta X-User-* del cliente cuando no hay Bearer (ver authMiddleware.ts).
+  allowUnverifiedIdentity: process.env.ALLOW_UNVERIFIED_IDENTITY === 'true',
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),

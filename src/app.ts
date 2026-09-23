@@ -33,6 +33,7 @@ export function createApp(): Express {
     allowedHeaders: [
       'Content-Type',
       'Accept',
+      'Authorization',
       'X-User-Id',
       'X-User-Role',
       'X-User-Email',

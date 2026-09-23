@@ -17,6 +17,8 @@ export interface DecodedAccessToken {
   oid: string;
   roles?: string[];
   preferred_username?: string;
+  upn?: string;
+  email?: string;
   name?: string;
   aud: string;
   iss: string;
@@ -30,7 +32,11 @@ export function verifyAccessToken(token: string): Promise<DecodedAccessToken> {
       getKey,
       {
         audience: [config.azureClientId, `api://${config.azureClientId}`],
-        issuer: `https://login.microsoftonline.com/${config.azureTenantId}/v2.0`,
+        // v2 o v1 según accessTokenAcceptedVersion en el manifest del App Registration.
+        issuer: [
+          `https://login.microsoftonline.com/${config.azureTenantId}/v2.0`,
+          `https://sts.windows.net/${config.azureTenantId}/`,
+        ],
         algorithms: ['RS256'],
       },
       (err, decoded) => {
