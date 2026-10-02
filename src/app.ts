@@ -1,10 +1,11 @@
 import cors from 'cors';
-import express, { Express } from 'express';
+import express, { Express, Request, Response } from 'express';
 import path from 'node:path';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { methodNotAllowedHandler } from './middleware/methodNotAllowed.js';
 import { notFoundHandler } from './middleware/notFound.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import catalogRouter from './routes/catalog.js';
@@ -33,6 +34,10 @@ export function createApp(): Express {
     allowedHeaders: [
       'Content-Type',
       'Accept',
+      // El front ya no manda X-User-*: manda el Bearer token que MSAL agrega y el
+      // authMiddleware traduce a headers internos. Sin esto, el preflight de CORS
+      // rechaza la petición con "Request header field authorization is not allowed".
+      'Authorization',
       'X-User-Id',
       'X-User-Role',
       'X-User-Email',
@@ -44,6 +49,11 @@ export function createApp(): Express {
   app.use(express.json());
   app.use(requestLogger);
   app.use(authMiddleware);
+
+  // Sin index.html, express.static no resuelve el directorio raíz: redirigir a la vista principal.
+  const vistasRedirect = (_req: Request, res: Response) => res.redirect(302, '/vistas-test/view.html');
+  app.get('/vistas-test', vistasRedirect);
+  app.get('/vistas-test/', vistasRedirect);
   app.use('/vistas-test', express.static(path.resolve('vistas-test')));
 
   app.use('/health', healthRouter);
@@ -52,6 +62,7 @@ export function createApp(): Express {
   app.use('/api/products', productsRouter);
   app.use('/api/users', usersRouter);
 
+  app.use(methodNotAllowedHandler(app));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
