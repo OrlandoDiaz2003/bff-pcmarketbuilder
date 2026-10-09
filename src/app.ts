@@ -34,14 +34,8 @@ export function createApp(): Express {
     allowedHeaders: [
       'Content-Type',
       'Accept',
-      // El front ya no manda X-User-*: manda el Bearer token que MSAL agrega y el
-      // authMiddleware traduce a headers internos. Sin esto, el preflight de CORS
-      // rechaza la petición con "Request header field authorization is not allowed".
+      // El front envía únicamente Authorization con el Bearer token validado por el BFF.
       'Authorization',
-      'X-User-Id',
-      'X-User-Role',
-      'X-User-Email',
-      'X-User-Name',
     ],
   };
   app.use(cors(corsOptions));

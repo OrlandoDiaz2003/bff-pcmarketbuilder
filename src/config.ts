@@ -35,4 +35,7 @@ export const config = {
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),
   logFile: process.env.LOG_FILE || '',
   catalogPageSize: 100,
+  allowDevAuthHeaders:
+    process.env.ALLOW_DEV_AUTH_HEADERS === 'true' ||
+    (process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_AUTH_HEADERS !== 'false'),
 } as const;

@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import { getMe, syncUser, updateMe, UpdateUserRequest, UserAuthHeaders } from '../lib/users.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 type AsyncHandler = (req: Request, res: Response) => Promise<unknown>;
 
@@ -17,6 +18,7 @@ const readUserHeaders = (req: Request): UserAuthHeaders => ({
 });
 
 const router = Router();
+router.use(requireAuth);
 
 router.post(
   '/sync',
