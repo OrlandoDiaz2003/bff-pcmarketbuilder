@@ -74,6 +74,32 @@ export interface AddImageRequest {
   isPrimary?: boolean;
 }
 
+export interface PresignedUrlRequest {
+  fileName: string;
+  contentType: string;
+}
+
+export interface PresignedUrlResponse {
+  uploadUrl: string;
+  fileUrl: string;
+  objectKey: string;
+}
+
+export async function getPresignedImageUrl(
+  id: string,
+  body: PresignedUrlRequest,
+  authHeaders: AuthHeaders,
+): Promise<PresignedUrlResponse> {
+  const headers: Record<string, string> = {};
+  if (authHeaders.userId) headers['X-User-Id'] = authHeaders.userId;
+  if (authHeaders.role) headers['X-User-Role'] = authHeaders.role;
+  return requestJson<PresignedUrlResponse>(`${config.publicationsBaseUrl}/${id}/images/presigned-url`, {
+    method: 'POST',
+    headers,
+    body,
+  });
+}
+
 export async function addPublicationImage(
   id: string,
   body: AddImageRequest,

@@ -6,6 +6,7 @@ import {
   CreateListingRequest,
   createPublication,
   deletePublication,
+  getPresignedImageUrl,
   removePublicationImage,
   setPrimaryImage,
   updatePublicationStatus,
@@ -111,6 +112,32 @@ router.post(
       role: req.header('X-User-Role'),
     });
     res.status(201).json(created);
+  }),
+);
+
+router.post(
+  '/:publicationId/images/presigned-url',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const raw = req.params.publicationId;
+    const publicationId = Array.isArray(raw) ? raw[0] : raw;
+    if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
+    const { fileName, contentType } = req.body as { fileName?: string; contentType?: string };
+    if (!fileName || typeof fileName !== 'string') {
+      throw new BadRequestError("Parámetro 'fileName' es obligatorio");
+    }
+    if (!contentType || typeof contentType !== 'string') {
+      throw new BadRequestError("Parámetro 'contentType' es obligatorio");
+    }
+    const result = await getPresignedImageUrl(
+      publicationId,
+      { fileName, contentType },
+      {
+        userId: req.header('X-User-Id'),
+        role: req.header('X-User-Role'),
+      },
+    );
+    res.json(result);
   }),
 );
 
