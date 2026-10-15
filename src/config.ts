@@ -27,6 +27,8 @@ export const config = {
   publicationsBaseUrl: urlFromEnv('PUBLICATIONS_BASE_URL', 'http://localhost:8083/api/v1/publications'),
   productsBaseUrl: urlFromEnv('PRODUCTS_BASE_URL', 'http://localhost:8080/api/v1/products'),
   usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://localhost:8081/api/v1/users'),
+  paymentsBaseUrl: urlFromEnv('PAYMENTS_BASE_URL', 'http://localhost:8086/api/payments/orders'),
+  reportsBaseUrl: urlFromEnv('REPORTS_BASE_URL', 'http://localhost:8087/api/v1'),
   corsOrigins: listFromEnv('CORS_ORIGINS', ['http://localhost:4200']),
   azureTenantId: process.env.AZURE_TENANT_ID ?? '',
   azureClientId: process.env.AZURE_CLIENT_ID ?? '',
@@ -35,6 +37,9 @@ export const config = {
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),
   logFile: process.env.LOG_FILE || '',
   catalogPageSize: 100,
+  // Identidad con la que el BFF opera por su cuenta (p. ej. marcar una publicación IN_INSPECTION tras un pago).
+  // Válida porque los microservicios solo son alcanzables desde el BFF (subred privada).
+  serviceIdentity: { userId: 'bff-system', role: 'WORKSHOP_ADMIN' },
   allowDevAuthHeaders:
     process.env.ALLOW_DEV_AUTH_HEADERS === 'true' ||
     (process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_AUTH_HEADERS !== 'false'),

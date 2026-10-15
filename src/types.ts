@@ -130,3 +130,68 @@ export interface ListingDetail {
   product: Product | null;
   seller: Seller | null;
 }
+
+export type PaymentStatus = 'PENDING' | 'HOLD_ESCROW' | 'RELEASED_TO_SELLER' | 'REFUNDED';
+
+export type InspectionStatus = 'PENDING' | 'IN_REVIEW' | 'PASSED' | 'FAILED';
+
+export interface OrderItem {
+  orderItemId: string;
+  publicationId: string;
+  sellerId: string;
+  description: string | null;
+  price: number;
+  inspectionStatus: string;
+}
+
+export interface Order {
+  orderId: string;
+  buyerId: string;
+  buyerEmail: string | null;
+  orderType: string;
+  status: string;
+  totalAmount: number;
+  paymentStatus: PaymentStatus;
+  createdAt: string;
+  items: OrderItem[];
+}
+
+/** Estado de la revisión técnica de una pieza, tal como la ve el comprador en "Mis compras". */
+export interface OrderItemInspection {
+  status: InspectionStatus;
+  completedAt: string | null;
+}
+
+export interface OrderWithInspections extends Omit<Order, 'items'> {
+  items: Array<OrderItem & { inspection: OrderItemInspection | null }>;
+}
+
+export interface ComponentCheck {
+  component: string;
+  result: 'OK' | 'WARNING' | 'FAIL';
+  note: string | null;
+}
+
+export interface Inspection {
+  id: string;
+  orderId: string;
+  orderItemId: string;
+  publicationId: string | null;
+  description: string | null;
+  buyerId: string;
+  buyerEmail: string | null;
+  sellerId: string;
+  status: InspectionStatus;
+  agentId: string | null;
+  maintenanceDone: string | null;
+  maintenanceDate: string | null;
+  workshopNotes: string | null;
+  checks: ComponentCheck[];
+  completedAt: string | null;
+  createdAt: string;
+}
+
+/** Inspección + datos de la pieza (fotos, producto, vendedor) para que el admin la vea al revisar. */
+export interface InspectionWithListing extends Inspection {
+  listing: ListingDetail | null;
+}
