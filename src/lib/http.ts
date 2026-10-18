@@ -24,10 +24,20 @@ export function buildQuery(params: QueryParams): string {
 
 function messageFromErrorBody(body: unknown): string | null {
   if (body && typeof body === 'object') {
-    const msg = (body as { message?: unknown }).message;
+    const raw = body as Record<string, unknown>;
+    const msg = raw.message;
     if (typeof msg === 'string' && msg.length > 0) return msg;
 
-    const raw = body as Record<string, unknown>;
+    // Spring responde {timestamp, status, error, path} sin campo `message`
+    // cuando la validación ocurre fuera de un @RestControllerAdvice.
+    const err = raw.error;
+    if (typeof err === 'string' && err.length > 0) {
+      const path = raw.path;
+      return typeof path === 'string' && path.length > 0
+        ? `${err} (${path})`
+        : err;
+    }
+
     const keys = Object.keys(raw);
     if (keys.length > 0 && keys.every((key) => typeof raw[key] === 'string')) {
       return keys.map((key) => `${key}: ${raw[key]}`).join('; ');

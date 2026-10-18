@@ -1,16 +1,20 @@
 import cors from 'cors';
-import express, { Express } from 'express';
+import express, { Express, Request, Response } from 'express';
 import path from 'node:path';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { methodNotAllowedHandler } from './middleware/methodNotAllowed.js';
 import { notFoundHandler } from './middleware/notFound.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import catalogRouter from './routes/catalog.js';
 import categoriesRouter from './routes/categories.js';
 import healthRouter from './routes/health.js';
+import paymentsRouter from './routes/payments.js';
 import productsRouter from './routes/products.js';
+import reportsRouter from './routes/reports.js';
+import shipmentsRouter from './routes/shipments.js';
 import usersRouter from './routes/users.js';
 
 export function createApp(): Express {
@@ -34,6 +38,8 @@ export function createApp(): Express {
       'Content-Type',
       'Accept',
       'Authorization',
+      // identityHeadersInterceptor del front los envía cuando hay sesión (puente de dev);
+      // sin listarlos aquí el preflight CORS falla y el catálogo no carga.
       'X-User-Id',
       'X-User-Role',
       'X-User-Email',
@@ -42,9 +48,14 @@ export function createApp(): Express {
   };
   app.use(cors(corsOptions));
 
-  app.use(express.json());
+  app.use(express.json({ limit: '8mb' })); // la foto de la inspeccion viaja en base64
   app.use(requestLogger);
   app.use(authMiddleware);
+
+  // Sin index.html, express.static no resuelve el directorio raíz: redirigir a la vista principal.
+  const vistasRedirect = (_req: Request, res: Response) => res.redirect(302, '/vistas-test/view.html');
+  app.get('/vistas-test', vistasRedirect);
+  app.get('/vistas-test/', vistasRedirect);
   app.use('/vistas-test', express.static(path.resolve('vistas-test')));
 
   app.use('/health', healthRouter);
@@ -52,7 +63,11 @@ export function createApp(): Express {
   app.use('/api/categories', categoriesRouter);
   app.use('/api/products', productsRouter);
   app.use('/api/users', usersRouter);
+  app.use('/api/payments', paymentsRouter);
+  app.use('/api/shipping', shipmentsRouter);
+  app.use('/api/reports', reportsRouter);
 
+  app.use(methodNotAllowedHandler(app));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

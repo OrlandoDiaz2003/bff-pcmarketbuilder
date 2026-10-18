@@ -28,14 +28,18 @@ export const config = {
   httpsPort: numberFromEnv('HTTPS_PORT', 4443),
   publicationsBaseUrl: urlFromEnv('PUBLICATIONS_BASE_URL', 'http://100.55.98.236:8083/api/v1/publications'),
   productsBaseUrl: urlFromEnv('PRODUCTS_BASE_URL', 'http://34.239.255.125:8082/api/v1/products'),
-  usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://100.54.104.174:8081/api/v1/users'),
+  usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://localhost:8081/api/v1/users'),
+  // payments expone /api/payments/orders; shipments y reports-service cuelgan de /api/v1.
+  paymentsBaseUrl: urlFromEnv('PAYMENTS_BASE_URL', 'http://localhost:8086/api/payments'),
+  shipmentsBaseUrl: urlFromEnv('SHIPPING_BASE_URL', 'http://localhost:8084/api/v1'),
+  reportsBaseUrl: urlFromEnv('REPORTS_BASE_URL', 'http://localhost:8087/api/v1'),
+
+
   // GitHub Pages (front desplegado) + Angular local.
   corsOrigins: listFromEnv('CORS_ORIGINS', ['https://sotom28.github.io', 'http://localhost:4200']),
   // Identificadores públicos del App Registration (no son secretos; el front ya los expone).
   azureTenantId: process.env.AZURE_TENANT_ID || '35365687-614a-481c-8b8b-b4debee24880',
   azureClientId: process.env.AZURE_CLIENT_ID || '6c2342af-22f6-4de8-a545-2a3b04e7d1ff',
-  // Solo desarrollo local: acepta X-User-* del cliente cuando no hay Bearer (ver authMiddleware.ts).
-  allowUnverifiedIdentity: process.env.ALLOW_UNVERIFIED_IDENTITY === 'true',
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),
@@ -47,4 +51,7 @@ export const config = {
     .split(',')
     .map((h) => h.trim())
     .filter(Boolean),
+  allowDevAuthHeaders:
+    process.env.ALLOW_DEV_AUTH_HEADERS === 'true' ||
+    (process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_AUTH_HEADERS !== 'false'),
 } as const;

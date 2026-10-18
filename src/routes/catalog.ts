@@ -6,12 +6,14 @@ import {
   CreateListingRequest,
   createPublication,
   deletePublication,
+  getPresignedImageUrl,
   removePublicationImage,
   setPrimaryImage,
   updatePublicationStatus,
   UpdateStatusRequest,
 } from '../lib/publications.js';
 import { getListingDetail, ListingSearchParams, searchListings } from '../services/catalogService.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 import { Grade, PublicationStatus } from '../types.js';
 
 type AsyncHandler = (req: Request, res: Response) => Promise<unknown>;
@@ -103,6 +105,7 @@ router.get(
 
 router.post(
   '/',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const created = await createPublication(req.body as CreateListingRequest, {
       userId: req.header('X-User-Id'),
@@ -113,7 +116,34 @@ router.post(
 );
 
 router.post(
+  '/:publicationId/images/presigned-url',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const raw = req.params.publicationId;
+    const publicationId = Array.isArray(raw) ? raw[0] : raw;
+    if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
+    const { fileName, contentType } = req.body as { fileName?: string; contentType?: string };
+    if (!fileName || typeof fileName !== 'string') {
+      throw new BadRequestError("Parámetro 'fileName' es obligatorio");
+    }
+    if (!contentType || typeof contentType !== 'string') {
+      throw new BadRequestError("Parámetro 'contentType' es obligatorio");
+    }
+    const result = await getPresignedImageUrl(
+      publicationId,
+      { fileName, contentType },
+      {
+        userId: req.header('X-User-Id'),
+        role: req.header('X-User-Role'),
+      },
+    );
+    res.json(result);
+  }),
+);
+
+router.post(
   '/:publicationId/images',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const raw = req.params.publicationId;
     const publicationId = Array.isArray(raw) ? raw[0] : raw;
@@ -132,6 +162,7 @@ router.post(
 
 router.patch(
   '/:publicationId/status',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const raw = req.params.publicationId;
     const publicationId = Array.isArray(raw) ? raw[0] : raw;
@@ -150,6 +181,7 @@ router.patch(
 
 router.delete(
   '/:publicationId',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const raw = req.params.publicationId;
     const publicationId = Array.isArray(raw) ? raw[0] : raw;
@@ -164,6 +196,7 @@ router.delete(
 
 router.delete(
   '/:publicationId/images/:imageId',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const raw = req.params.publicationId;
     const rawImg = req.params.imageId;
@@ -181,6 +214,7 @@ router.delete(
 
 router.patch(
   '/:publicationId/images/:imageId/primary',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const raw = req.params.publicationId;
     const rawImg = req.params.imageId;
