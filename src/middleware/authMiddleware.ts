@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { verifyAccessToken } from '../auth/verifyToken.js';
 import { config } from '../config.js';
 import { logError } from '../lib/logger.js';
+import { ensureUserSynced } from '../services/userSync.js';
 
 const DEFAULT_ROLE = 'BUYER_SELLER';
 const KNOWN_ROLES = ['BUYER_SELLER', 'TECHNICAL_AGENT', 'WORKSHOP_ADMIN'];
@@ -30,6 +31,13 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       setHeader(req, 'x-user-role', roleFromToken(decoded.roles));
       setHeader(req, 'x-user-email', decoded.preferred_username ?? '');
       setHeader(req, 'x-user-name', decoded.name ?? '');
+      // Garantiza que el usuario exista en ms-user (alta automática en su primera petición). No bloquea ni rompe la request.
+      ensureUserSynced({
+        userId: decoded.oid,
+        role: roleFromToken(decoded.roles),
+        email: decoded.preferred_username ?? '',
+        name: decoded.name ?? '',
+      });
     } catch (err) {
       logError(`[auth] Token rechazado en ${req.method} ${req.path}: ${(err as Error).message}`);
       res.status(401).json({

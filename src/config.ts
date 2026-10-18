@@ -34,6 +34,9 @@ export const config = {
   azureClientId: process.env.AZURE_CLIENT_ID ?? '',
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
+  // Alta/actualización automática del usuario en ms-user a partir del token (ver services/userSync.ts).
+  userSyncTtlMs: numberFromEnv('USER_SYNC_TTL_MS', 1_800_000),
+  userSyncRetryMs: numberFromEnv('USER_SYNC_RETRY_MS', 30_000),
   upstreamTimeoutMs: numberFromEnv('UPSTREAM_TIMEOUT_MS', 5_000),
   logFile: process.env.LOG_FILE || '',
   catalogPageSize: 100,

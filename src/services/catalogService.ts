@@ -73,6 +73,12 @@ async function lookupProduct(productId: string): Promise<Product | null> {
   }
 }
 
+/** Olvida lo que se sabía de un usuario (incluido "no existe"): se llama cuando acaba de crearse/actualizarse en ms-user. */
+export function forgetUserProfile(azureOid: string): void {
+  sellersCache.delete(azureOid);
+  missingSellersCache?.ids.delete(azureOid);
+}
+
 async function lookupSeller(azureOid: string): Promise<Seller | null> {
   const cached = sellersCache.get(azureOid);
   if (cached && Date.now() - cached.at < userTtl()) {
