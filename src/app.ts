@@ -17,6 +17,7 @@ import paymentsRouter from './routes/payments.js';
 import productsRouter from './routes/products.js';
 import reportsRouter from './routes/reports.js';
 import shipmentsRouter from './routes/shipments.js';
+import salesRouter from './routes/sales.js';
 import usersRouter from './routes/users.js';
 
 export function createApp(): Express {
@@ -70,6 +71,7 @@ export function createApp(): Express {
   app.use('/api/payments', paymentsRouter);
   app.use('/api/shipping', shipmentsRouter);
   app.use('/api/reports', reportsRouter);
+  app.use('/api/sales', salesRouter);
 
   app.use(methodNotAllowedHandler(app));
   app.use(notFoundHandler);
