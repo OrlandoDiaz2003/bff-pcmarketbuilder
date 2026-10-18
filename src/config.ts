@@ -51,6 +51,9 @@ export const config = {
     .split(',')
     .map((h) => h.trim())
     .filter(Boolean),
+  // Identidad con la que el BFF opera por su cuenta (p. ej. marcar una publicación IN_INSPECTION tras un pago).
+  // Válida porque los microservicios solo son alcanzables desde el BFF (subred privada).
+  serviceIdentity: { userId: 'bff-system', role: 'WORKSHOP_ADMIN' },
   allowDevAuthHeaders:
     process.env.ALLOW_DEV_AUTH_HEADERS === 'true' ||
     (process.env.NODE_ENV !== 'production' && process.env.ALLOW_DEV_AUTH_HEADERS !== 'false'),

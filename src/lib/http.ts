@@ -46,10 +46,7 @@ function messageFromErrorBody(body: unknown): string | null {
   return null;
 }
 
-export async function requestJson<T>(
-  url: string,
-  options: RequestOptions = {},
-): Promise<T> {
+async function fetchOk(url: string, options: RequestOptions): Promise<Response> {
   const { method = 'GET', headers, body, timeoutMs = config.upstreamTimeoutMs } = options;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -87,8 +84,35 @@ export async function requestJson<T>(
     );
   }
 
+  return response;
+}
+
+export async function requestJson<T>(
+  url: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const response = await fetchOk(url, options);
   if (response.status === 204) {
     return undefined as T;
   }
   return (await response.json()) as T;
+}
+
+export interface BinaryResponse {
+  body: Buffer;
+  contentType: string;
+  contentDisposition: string | null;
+}
+
+/** Para respuestas no JSON (PDF). El llamador debe pasar el header Accept adecuado. */
+export async function requestBuffer(
+  url: string,
+  options: RequestOptions = {},
+): Promise<BinaryResponse> {
+  const response = await fetchOk(url, options);
+  return {
+    body: Buffer.from(await response.arrayBuffer()),
+    contentType: response.headers.get('content-type') ?? 'application/octet-stream',
+    contentDisposition: response.headers.get('content-disposition'),
+  };
 }

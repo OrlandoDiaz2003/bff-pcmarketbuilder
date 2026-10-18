@@ -10,6 +10,8 @@ app.listen(config.port, () => {
   log(`[bff] Marketplace BFF escuchando en http://localhost:${config.port}`);
   log(`[bff] ms-publication -> ${config.publicationsBaseUrl}`);
   log(`[bff] ms-product     -> ${config.productsBaseUrl}`);
+  log(`[bff] ms-payments    -> ${config.paymentsBaseUrl}`);
+  log(`[bff] ms-reports     -> ${config.reportsBaseUrl}`);
   if (config.logFile) log(`[bff] escribiendo logs en ${config.logFile}`);
 });
 

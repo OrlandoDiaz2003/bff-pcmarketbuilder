@@ -11,6 +11,8 @@ import { requestLogger } from './middleware/requestLogger.js';
 import catalogRouter from './routes/catalog.js';
 import categoriesRouter from './routes/categories.js';
 import healthRouter from './routes/health.js';
+import inspectionsRouter from './routes/inspections.js';
+import ordersRouter from './routes/orders.js';
 import paymentsRouter from './routes/payments.js';
 import productsRouter from './routes/products.js';
 import reportsRouter from './routes/reports.js';
@@ -63,6 +65,8 @@ export function createApp(): Express {
   app.use('/api/categories', categoriesRouter);
   app.use('/api/products', productsRouter);
   app.use('/api/users', usersRouter);
+  app.use('/api/orders', ordersRouter);
+  app.use('/api/inspections', inspectionsRouter);
   app.use('/api/payments', paymentsRouter);
   app.use('/api/shipping', shipmentsRouter);
   app.use('/api/reports', reportsRouter);
