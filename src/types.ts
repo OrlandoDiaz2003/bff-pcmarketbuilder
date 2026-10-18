@@ -160,6 +160,8 @@ export interface Order {
 export interface OrderItemInspection {
   status: InspectionStatus;
   completedAt: string | null;
+  /** Cuando el taller entregó la pieza (solo si fue aprobada). */
+  deliveredAt: string | null;
 }
 
 export interface OrderWithInspections extends Omit<Order, 'items'> {
@@ -188,10 +190,46 @@ export interface Inspection {
   workshopNotes: string | null;
   checks: ComponentCheck[];
   completedAt: string | null;
+  deliveredAt: string | null;
   createdAt: string;
 }
 
 /** Inspección + datos de la pieza (fotos, producto, vendedor) para que el admin la vea al revisar. */
 export interface InspectionWithListing extends Inspection {
   listing: ListingDetail | null;
+  /** Pasos posteriores que no se pudieron aplicar (reembolso, estado de la publicación). Ver POST /inspections/:id/sync. */
+  warnings?: string[];
+}
+
+/** Venta tal como la entrega reports al BFF (formato reducido). buyerId solo sirve para resolver el nombre: no sale del BFF. */
+export interface SaleRecord {
+  id: string;
+  orderId: string;
+  orderItemId: string;
+  publicationId: string | null;
+  description: string | null;
+  buyerId: string;
+  status: InspectionStatus;
+  completedAt: string | null;
+  deliveredAt: string | null;
+  createdAt: string;
+}
+
+export type SaleStage = 'PAID' | 'IN_REVIEW' | 'APPROVED' | 'DELIVERED' | 'REJECTED';
+
+/** Lo que ve el vendedor en "Mis ventas". Sin correo, sin id del comprador, sin notas del taller. */
+export interface SaleView {
+  id: string;
+  orderItemId: string;
+  publicationId: string | null;
+  title: string;
+  price: number | null;
+  image: string | null;
+  /** Estado actual de la publicación (p. ej. ACTIVE si la pieza fue rechazada y volvió al catálogo). */
+  publicationStatus: PublicationStatus | null;
+  stage: SaleStage;
+  buyerUsername: string | null;
+  paidAt: string;
+  reviewedAt: string | null;
+  deliveredAt: string | null;
 }

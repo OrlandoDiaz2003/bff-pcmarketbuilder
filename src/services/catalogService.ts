@@ -79,7 +79,8 @@ export function forgetUserProfile(azureOid: string): void {
   missingSellersCache?.ids.delete(azureOid);
 }
 
-async function lookupSeller(azureOid: string): Promise<Seller | null> {
+/** Perfil público (nombre de usuario) por oid, con caché. null si el usuario aún no existe en ms-user. */
+export async function lookupSeller(azureOid: string): Promise<Seller | null> {
   const cached = sellersCache.get(azureOid);
   if (cached && Date.now() - cached.at < userTtl()) {
     return cached.seller;

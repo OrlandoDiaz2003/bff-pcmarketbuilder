@@ -1,5 +1,5 @@
 import { config } from '../config.js';
-import { Inspection } from '../types.js';
+import { Inspection, SaleRecord } from '../types.js';
 import { requestJson } from './http.js';
 
 export interface InspectionAuth {
@@ -22,8 +22,11 @@ function headers(auth: InspectionAuth): Record<string, string> {
   return h;
 }
 
-/** scope: open = bandeja del admin, mine = las que cerró el admin, buyer = compras del usuario. */
-export function listInspections(auth: InspectionAuth, scope: 'open' | 'mine' | 'buyer'): Promise<Inspection[]> {
+/** scope: open = bandeja del admin, to-deliver = aprobadas sin entregar (admin), mine = las que cerró el admin, buyer = compras del usuario. */
+export function listInspections(
+  auth: InspectionAuth,
+  scope: 'open' | 'to-deliver' | 'mine' | 'buyer',
+): Promise<Inspection[]> {
   return requestJson<Inspection[]>(`${config.reportsBaseUrl}/inspections?scope=${scope}`, {
     headers: headers(auth),
   });
@@ -44,5 +47,19 @@ export function completeInspection(
     method: 'POST',
     headers: headers(auth),
     body,
+  });
+}
+
+
+/** Ventas del vendedor (formato reducido). */
+export function listSales(auth: InspectionAuth): Promise<SaleRecord[]> {
+  return requestJson<SaleRecord[]>(`${config.reportsBaseUrl}/inspections?scope=seller`, { headers: headers(auth) });
+}
+
+/** El taller entrega la pieza aprobada. Idempotente en reports. */
+export function deliverInspection(auth: InspectionAuth, id: string): Promise<Inspection> {
+  return requestJson<Inspection>(`${config.reportsBaseUrl}/inspections/${encodeURIComponent(id)}/deliver`, {
+    method: 'POST',
+    headers: headers(auth),
   });
 }

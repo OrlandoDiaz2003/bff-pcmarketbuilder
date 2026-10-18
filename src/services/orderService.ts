@@ -70,7 +70,9 @@ export async function listMyOrders(buyerId: string): Promise<OrderWithInspection
         const inspection = byItem.get(item.orderItemId);
         return {
           ...item,
-          inspection: inspection ? { status: inspection.status, completedAt: inspection.completedAt } : null,
+          inspection: inspection
+            ? { status: inspection.status, completedAt: inspection.completedAt, deliveredAt: inspection.deliveredAt }
+            : null,
         };
       }),
     }));
