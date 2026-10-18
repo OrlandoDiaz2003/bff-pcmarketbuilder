@@ -12,8 +12,12 @@ export async function withListing(inspection: Inspection): Promise<InspectionWit
   return { ...inspection, listing };
 }
 
-export async function listOpenInspections(auth: InspectionAuth): Promise<InspectionWithListing[]> {
-  const inspections = await listInspections(auth, 'open');
+/** Bandeja del admin: 'open' = pendientes de revisión, 'to-deliver' = aprobadas sin entregar. */
+export async function listOpenInspections(
+  auth: InspectionAuth,
+  scope: 'open' | 'to-deliver' = 'open',
+): Promise<InspectionWithListing[]> {
+  const inspections = await listInspections(auth, scope);
   return Promise.all(inspections.map(withListing));
 }
 
