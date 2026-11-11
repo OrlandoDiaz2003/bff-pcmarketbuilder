@@ -26,6 +26,7 @@ describe('etapas de una venta (stageOf)', () => {
     assert.equal(stageOf({ status: 'PASSED', deliveredAt: null }), 'APPROVED');
     assert.equal(stageOf({ status: 'PASSED', deliveredAt: '2026-10-18T12:00:00Z' }), 'DELIVERED');
     assert.equal(stageOf({ status: 'FAILED', deliveredAt: null }), 'REJECTED');
+    assert.equal(stageOf({ status: 'CANCELLED', deliveredAt: null }), 'CANCELLED');
   });
 });
 
@@ -60,6 +61,12 @@ describe('vista del vendedor (toSaleView)', () => {
   it('una pieza rechazada que volvió al catálogo se ve como REJECTED con la publicación ACTIVE', () => {
     const view = toSaleView(sale({ status: 'FAILED' }), publication({ status: 'ACTIVE' }), null);
     assert.equal(view.stage, 'REJECTED');
+    assert.equal(view.publicationStatus, 'ACTIVE');
+  });
+
+  it('una compra cancelada por el taller se ve CANCELLED y la pieza vuelve al catálogo', () => {
+    const view = toSaleView(sale({ status: 'CANCELLED' }), publication({ status: 'ACTIVE' }), null);
+    assert.equal(view.stage, 'CANCELLED');
     assert.equal(view.publicationStatus, 'ACTIVE');
   });
 });

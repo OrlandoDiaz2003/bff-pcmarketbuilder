@@ -133,7 +133,8 @@ export interface ListingDetail {
 
 export type PaymentStatus = 'PENDING' | 'HOLD_ESCROW' | 'RELEASED_TO_SELLER' | 'REFUNDED';
 
-export type InspectionStatus = 'PENDING' | 'IN_REVIEW' | 'PASSED' | 'FAILED';
+/** CANCELLED: el taller canceló la compra (se reembolsó y la pieza volvió al catálogo). */
+export type InspectionStatus = 'PENDING' | 'IN_REVIEW' | 'PASSED' | 'FAILED' | 'CANCELLED';
 
 export interface OrderItem {
   orderItemId: string;
@@ -174,6 +175,16 @@ export interface ComponentCheck {
   note: string | null;
 }
 
+/** Estado de un correo de una inspección cerrada: PENDING (en curso), SENT, NOT_SENT (sin SMTP o sin destinatario) o FAILED. */
+export type NotificationStatus = 'PENDING' | 'SENT' | 'NOT_SENT' | 'FAILED';
+
+export interface NotificationInfo {
+  /** null = aún no se sabe (inspección abierta o anterior al seguimiento). */
+  status: NotificationStatus | null;
+  /** Motivo si no salió el correo. */
+  error: string | null;
+}
+
 export interface Inspection {
   id: string;
   orderId: string;
@@ -192,6 +203,8 @@ export interface Inspection {
   completedAt: string | null;
   deliveredAt: string | null;
   createdAt: string;
+  /** confirmation: correo "tu pieza pasó la revisión". report: generar el PDF y enviarlo. Solo lo ve el taller. */
+  notifications?: { confirmation: NotificationInfo; report: NotificationInfo };
 }
 
 /** Inspección + datos de la pieza (fotos, producto, vendedor) para que el admin la vea al revisar. */
@@ -215,7 +228,7 @@ export interface SaleRecord {
   createdAt: string;
 }
 
-export type SaleStage = 'PAID' | 'IN_REVIEW' | 'APPROVED' | 'DELIVERED' | 'REJECTED';
+export type SaleStage = 'PAID' | 'IN_REVIEW' | 'APPROVED' | 'DELIVERED' | 'REJECTED' | 'CANCELLED';
 
 /** Lo que ve el vendedor en "Mis ventas". Sin correo, sin id del comprador, sin notas del taller. */
 export interface SaleView {

@@ -118,6 +118,20 @@ describe('ciclo de vida de la venta (orden + publicación)', () => {
     assert.ok(!t.calls.some((c) => c.startsWith('setPublication')));
   });
 
+  it('cancelada: igual que un rechazo, primero REEMBOLSA y recién después repone la publicación a ACTIVE', async () => {
+    const t = setup();
+    const warnings = await t.lifecycle.afterCancelled(inspection({ status: 'CANCELLED' }));
+    assert.deepEqual(warnings, []);
+    assert.deepEqual(t.calls, ['getOrder', 'refund', 'getPublication', 'setPublication:ACTIVE']);
+  });
+
+  it('cancelada es idempotente y reconcile la reaplica (orden ya reembolsada, publicación ya activa)', async () => {
+    const t = setup({ payment: 'REFUNDED', publication: 'ACTIVE' });
+    assert.deepEqual(await t.lifecycle.reconcile(inspection({ status: 'CANCELLED' })), []);
+    assert.ok(!t.calls.includes('refund'));
+    assert.ok(!t.calls.some((c) => c.startsWith('setPublication')));
+  });
+
   it('reconcile reaplica según el estado actual de la inspección', async () => {
     const rejected = setup();
     await rejected.lifecycle.reconcile(inspection({ status: 'FAILED' }));

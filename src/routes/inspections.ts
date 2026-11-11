@@ -3,9 +3,11 @@ import { BadRequestError } from '../errors.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
 import {
   CompleteInspectionRequest,
+  cancelInspection,
   completeInspection,
   deliverInspection,
   getInspection,
+  resendNotifications,
 } from '../lib/inspections.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
@@ -27,14 +29,15 @@ router.use(requireAuth, requireRole('WORKSHOP_ADMIN'));
 
 /**
  * Bandeja del admin, con la pieza (foto, producto, vendedor). ?scope=open (por defecto): pendientes de revisión.
- * ?scope=to-deliver: aprobadas que el taller aún no entrega.
+ * ?scope=to-deliver: aprobadas que el taller aún no entrega. ?scope=notifications: cerradas con correos pendientes,
+ * no enviados o fallidos (con su motivo).
  */
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     const scope = (req.query.scope as string | undefined) ?? 'open';
-    if (scope !== 'open' && scope !== 'to-deliver') {
-      throw new BadRequestError("El parámetro 'scope' debe ser 'open' o 'to-deliver'");
+    if (scope !== 'open' && scope !== 'to-deliver' && scope !== 'notifications') {
+      throw new BadRequestError("El parámetro 'scope' debe ser 'open', 'to-deliver' o 'notifications'");
     }
     res.json(await listOpenInspections(auth(req), scope));
   }),
@@ -58,6 +61,27 @@ router.post(
     const done = await completeInspection(auth(req), idParam(req), req.body as CompleteInspectionRequest);
     const warnings = done.status === 'FAILED' ? await lifecycle.afterRejected(done) : [];
     res.json({ ...(await withListing(done)), warnings });
+  }),
+);
+
+/**
+ * El taller cancela la compra (p. ej. no se puede avisar al comprador): se reembolsa la orden y la publicación vuelve al
+ * catálogo. Lo que no se pueda aplicar llega en `warnings` y se reintenta con POST /:id/sync. Idempotente.
+ */
+router.post(
+  '/:id/cancel',
+  asyncHandler(async (req, res) => {
+    const done = await cancelInspection(auth(req), idParam(req));
+    const warnings = await lifecycle.afterCancelled(done);
+    res.json({ ...(await withListing(done)), warnings });
+  }),
+);
+
+/** Reenvía los correos pendientes o fallidos de una inspección cerrada (el "Reenviar correos" del admin). */
+router.post(
+  '/:id/resend-notifications',
+  asyncHandler(async (req, res) => {
+    res.json(await withListing(await resendNotifications(auth(req), idParam(req))));
   }),
 );
 
