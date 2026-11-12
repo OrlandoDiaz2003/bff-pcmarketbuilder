@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it, mock } from 'node:test';
-import { listInspections, resendNotifications } from '../lib/inspections.js';
+import { dismissNotifications, listInspections, resendNotifications } from '../lib/inspections.js';
 
 /** Sustituye fetch y devuelve las llamadas hechas hacia reports. */
 function stubFetch(payload: unknown) {
@@ -32,5 +32,13 @@ describe('correos de las inspecciones (BFF -> reports)', () => {
     assert.equal(calls[0].method, 'POST');
     assert.match(calls[0].url, /\/inspections\/a%2Fb\/resend-notifications$/);
     assert.equal(calls[0].headers['X-User-Id'], 'admin-1');
+  });
+
+  it('descartar el aviso hace POST a dismiss-notifications con el rol del admin', async () => {
+    const calls = stubFetch({ id: 'i1' });
+    await dismissNotifications(admin, 'i1');
+    assert.equal(calls[0].method, 'POST');
+    assert.match(calls[0].url, /\/inspections\/i1\/dismiss-notifications$/);
+    assert.equal(calls[0].headers['X-User-Role'], 'WORKSHOP_ADMIN');
   });
 });

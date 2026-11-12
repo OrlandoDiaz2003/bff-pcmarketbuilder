@@ -84,3 +84,11 @@ export function cancelInspection(auth: InspectionAuth, id: string): Promise<Insp
     headers: headers(auth),
   });
 }
+
+/** Descarta el aviso de correos de una inspección cerrada: deja de aparecer en la pestaña Correos (no reenvía nada). Idempotente. */
+export function dismissNotifications(auth: InspectionAuth, id: string): Promise<Inspection> {
+  return requestJson<Inspection>(
+    `${config.reportsBaseUrl}/inspections/${encodeURIComponent(id)}/dismiss-notifications`,
+    { method: 'POST', headers: headers(auth) },
+  );
+}

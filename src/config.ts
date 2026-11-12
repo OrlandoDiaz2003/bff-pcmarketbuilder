@@ -29,6 +29,11 @@ export const config = {
   usersBaseUrl: urlFromEnv('USERS_BASE_URL', 'http://localhost:8081/api/v1/users'),
   paymentsBaseUrl: urlFromEnv('PAYMENTS_BASE_URL', 'http://localhost:8086/api/payments/orders'),
   reportsBaseUrl: urlFromEnv('REPORTS_BASE_URL', 'http://localhost:8087/api/v1'),
+  // Kafka: sin KAFKA_BROKERS (p. ej. "host1:9092,host2:9093") el BFF no publica eventos ni intenta conectarse.
+  kafkaBrokers: listFromEnv('KAFKA_BROKERS', []),
+  kafkaClientId: process.env.KAFKA_CLIENT_ID || 'bff',
+  analyticsBaseUrl: urlFromEnv('ANALYTICS_BASE_URL', 'http://localhost:8091/api/v1'),
+  topicAdminBaseUrl: urlFromEnv('TOPIC_ADMIN_BASE_URL', 'http://localhost:8092/api/v1'),
   corsOrigins: listFromEnv('CORS_ORIGINS', ['http://localhost:4200']),
   azureTenantId: process.env.AZURE_TENANT_ID ?? '',
   azureClientId: process.env.AZURE_CLIENT_ID ?? '',

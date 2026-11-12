@@ -1,3 +1,4 @@
+import { events } from '../services/eventService.js';
 import { NextFunction, Request, Response, Router } from 'express';
 import { BadRequestError } from '../errors.js';
 import {
@@ -88,7 +89,17 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const params = parseSearchParams(req.query);
-    res.json(await searchListings(params));
+    const result = await searchListings(params);
+    void events.searchPerformed(req.header('x-user-id'), {
+      q: params.q,
+      brand: params.brand,
+      subcategoryId: params.subcategoryId,
+      socket: params.socket,
+      sellerId: params.sellerId,
+      grade: params.grade,
+      maxPrice: params.maxPrice,
+    });
+    res.json(result);
   }),
 );
 
@@ -99,6 +110,7 @@ router.get(
     const publicationId = Array.isArray(raw) ? raw[0] : raw;
     if (!publicationId) throw new BadRequestError('Falta publicationId en la ruta');
     const detail = await getListingDetail(publicationId);
+    void events.listingViewed(req.header('x-user-id'), publicationId);
     res.json(detail);
   }),
 );
@@ -111,6 +123,7 @@ router.post(
       userId: req.header('X-User-Id'),
       role: req.header('X-User-Role'),
     });
+    void events.publicationCreated(req.header('x-user-id'), created);
     res.status(201).json(created);
   }),
 );
