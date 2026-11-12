@@ -15,6 +15,8 @@ import inspectionsRouter from './routes/inspections.js';
 import ordersRouter from './routes/orders.js';
 import productsRouter from './routes/products.js';
 import reportsRouter from './routes/reports.js';
+import analyticsRouter from './routes/analytics.js';
+import kafkaAdminRouter from './routes/kafkaAdmin.js';
 import salesRouter from './routes/sales.js';
 import usersRouter from './routes/users.js';
 
@@ -63,6 +65,9 @@ export function createApp(): Express {
   app.use('/api/inspections', inspectionsRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/sales', salesRouter);
+  // Se llama /api/insights y no /api/analytics: los bloqueadores de anuncios del navegador bloquean cualquier URL con "analytics".
+  app.use('/api/insights', analyticsRouter);
+  app.use('/api/kafka', kafkaAdminRouter);
 
   app.use(methodNotAllowedHandler(app));
   app.use(notFoundHandler);
