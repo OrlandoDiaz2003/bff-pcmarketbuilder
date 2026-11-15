@@ -10,6 +10,7 @@ import { Inspection, PublicationStatus } from '../types.js';
  *   rechazada → se REEMBOLSA la orden y recién después la publicación vuelve a ACTIVE.
  *               El orden importa: payments rechaza (409) comprar una publicación cuya orden sigue pagada; si solo volviera a ACTIVE
  *               aparecería en el catálogo pero nadie podría comprarla.
+ *   cancelada → igual que rechazada: se reembolsa la orden y la publicación vuelve a ACTIVE (el taller canceló la compra).
  *   entregada → se LIBERA el escrow al vendedor (orden COMPLETED) y la publicación pasa a SOLD.
  *               Si la liberación falla no se marca SOLD: el reintento (sync) repite ambos pasos.
  *
@@ -84,12 +85,15 @@ export function createLifecycle(deps: LifecycleDeps) {
 
   /** Reaplica, según el estado actual de la inspección, lo que corresponde a la orden y a la publicación. */
   async function reconcile(inspection: Inspection): Promise<string[]> {
-    if (inspection.status === 'FAILED') return afterRejected(inspection);
+    if (inspection.status === 'FAILED' || inspection.status === 'CANCELLED') return afterRejected(inspection);
     if (inspection.status === 'PASSED' && inspection.deliveredAt) return afterDelivered(inspection);
     return [];
   }
 
-  return { afterRejected, afterDelivered, reconcile };
+  /** Compra cancelada por el taller: mismo efecto que un rechazo (reembolso y la pieza vuelve al catálogo). */
+  const afterCancelled = afterRejected;
+
+  return { afterRejected, afterCancelled, afterDelivered, reconcile };
 }
 
 export const lifecycle = createLifecycle({

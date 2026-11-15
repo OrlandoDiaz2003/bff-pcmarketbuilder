@@ -1,4 +1,4 @@
-import { InspectionAuth, getInspection, listInspections } from '../lib/inspections.js';
+import { InspectionAuth, InspectionScope, getInspection, listInspections } from '../lib/inspections.js';
 import { Inspection, InspectionWithListing } from '../types.js';
 import { getListingDetail } from './catalogService.js';
 
@@ -12,10 +12,10 @@ export async function withListing(inspection: Inspection): Promise<InspectionWit
   return { ...inspection, listing };
 }
 
-/** Bandeja del admin: 'open' = pendientes de revisión, 'to-deliver' = aprobadas sin entregar. */
+/** Bandeja del admin: 'open' = pendientes de revisión, 'to-deliver' = aprobadas sin entregar, 'notifications' = correos con problemas. */
 export async function listOpenInspections(
   auth: InspectionAuth,
-  scope: 'open' | 'to-deliver' = 'open',
+  scope: Extract<InspectionScope, 'open' | 'to-deliver' | 'notifications'> = 'open',
 ): Promise<InspectionWithListing[]> {
   const inspections = await listInspections(auth, scope);
   return Promise.all(inspections.map(withListing));

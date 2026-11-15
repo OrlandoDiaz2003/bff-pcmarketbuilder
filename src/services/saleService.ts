@@ -12,6 +12,8 @@ export function stageOf(sale: Pick<SaleRecord, 'status' | 'deliveredAt'>): SaleS
       return 'IN_REVIEW';
     case 'FAILED':
       return 'REJECTED';
+    case 'CANCELLED':
+      return 'CANCELLED';
     case 'PASSED':
       return sale.deliveredAt ? 'DELIVERED' : 'APPROVED';
   }

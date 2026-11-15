@@ -33,8 +33,11 @@ export const config = {
   paymentsBaseUrl: urlFromEnv('PAYMENTS_BASE_URL', 'http://localhost:8086/api/payments'),
   shipmentsBaseUrl: urlFromEnv('SHIPPING_BASE_URL', 'http://localhost:8084/api/v1'),
   reportsBaseUrl: urlFromEnv('REPORTS_BASE_URL', 'http://localhost:8087/api/v1'),
-
-
+  // Kafka: sin KAFKA_BROKERS (p. ej. "host1:9092,host2:9093") el BFF no publica eventos ni intenta conectarse.
+  kafkaBrokers: listFromEnv('KAFKA_BROKERS', []),
+  kafkaClientId: process.env.KAFKA_CLIENT_ID || 'bff',
+  analyticsBaseUrl: urlFromEnv('ANALYTICS_BASE_URL', 'http://localhost:8091/api/v1'),
+  topicAdminBaseUrl: urlFromEnv('TOPIC_ADMIN_BASE_URL', 'http://localhost:8092/api/v1'),
   // GitHub Pages (front desplegado) + Angular local.
   corsOrigins: listFromEnv('CORS_ORIGINS', ['https://sotom28.github.io', 'http://localhost:4200']),
   // Identificadores públicos del App Registration (no son secretos; el front ya los expone).

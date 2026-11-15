@@ -5,6 +5,7 @@ import { log, logError } from '../lib/logger.js';
 import { checkout as createCheckout, listOrdersByBuyer } from '../lib/orders.js';
 import { getPublication, updatePublicationStatus } from '../lib/publications.js';
 import { Order, OrderWithInspections } from '../types.js';
+import { events } from './eventService.js';
 
 /**
  * Compra de una o más piezas. El orden importa:
@@ -36,6 +37,7 @@ export async function placeOrder(buyerId: string, publicationIds: string[], buye
     })),
   });
   log(`[orders] orden ${order.orderId} pagada por ${buyerId}: ${publicationIds.length} pieza(s)`);
+  void events.orderPaid(buyerId, order, publications); // copia para analítica (Kafka); no espera ni puede fallar la compra
 
   const results = await Promise.allSettled(
     publications.map((p) =>

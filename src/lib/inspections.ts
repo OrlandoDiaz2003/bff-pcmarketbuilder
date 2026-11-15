@@ -22,10 +22,15 @@ function headers(auth: InspectionAuth): Record<string, string> {
   return h;
 }
 
-/** scope: open = bandeja del admin, to-deliver = aprobadas sin entregar (admin), mine = las que cerró el admin, buyer = compras del usuario. */
+export type InspectionScope = 'open' | 'to-deliver' | 'notifications' | 'mine' | 'buyer';
+
+/**
+ * scope: open = bandeja del admin, to-deliver = aprobadas sin entregar (admin), notifications = cerradas con correos
+ * pendientes, no enviados o fallidos (admin), mine = las que cerró el admin, buyer = compras del usuario.
+ */
 export function listInspections(
   auth: InspectionAuth,
-  scope: 'open' | 'to-deliver' | 'mine' | 'buyer',
+  scope: InspectionScope,
 ): Promise<Inspection[]> {
   return requestJson<Inspection[]>(`${config.reportsBaseUrl}/inspections?scope=${scope}`, {
     headers: headers(auth),
@@ -62,4 +67,28 @@ export function deliverInspection(auth: InspectionAuth, id: string): Promise<Ins
     method: 'POST',
     headers: headers(auth),
   });
+}
+
+/** Reenvía los correos pendientes o fallidos de una inspección cerrada (lo ya enviado no se repite). */
+export function resendNotifications(auth: InspectionAuth, id: string): Promise<Inspection> {
+  return requestJson<Inspection>(
+    `${config.reportsBaseUrl}/inspections/${encodeURIComponent(id)}/resend-notifications`,
+    { method: 'POST', headers: headers(auth) },
+  );
+}
+
+/** El taller cancela la compra de una pieza (reports la marca cancelada; el BFF reembolsa y la devuelve al catálogo). Idempotente. */
+export function cancelInspection(auth: InspectionAuth, id: string): Promise<Inspection> {
+  return requestJson<Inspection>(`${config.reportsBaseUrl}/inspections/${encodeURIComponent(id)}/cancel`, {
+    method: 'POST',
+    headers: headers(auth),
+  });
+}
+
+/** Descarta el aviso de correos de una inspección cerrada: deja de aparecer en la pestaña Correos (no reenvía nada). Idempotente. */
+export function dismissNotifications(auth: InspectionAuth, id: string): Promise<Inspection> {
+  return requestJson<Inspection>(
+    `${config.reportsBaseUrl}/inspections/${encodeURIComponent(id)}/dismiss-notifications`,
+    { method: 'POST', headers: headers(auth) },
+  );
 }
