@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { verifyAccessToken } from '../auth/verifyToken.js';
+import { verifyIdentity } from '../auth/verifyToken.js';
 import { config } from '../config.js';
 import { logError } from '../lib/logger.js';
 import { ensureUserSynced } from '../services/userSync.js';
@@ -26,17 +26,19 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
     const token = authHeader.slice(7);
     try {
-      const decoded = await verifyAccessToken(token);
-      setHeader(req, 'x-user-id', decoded.oid);
-      setHeader(req, 'x-user-role', roleFromToken(decoded.roles));
-      setHeader(req, 'x-user-email', decoded.preferred_username ?? '');
-      setHeader(req, 'x-user-name', decoded.name ?? '');
+      const identity = await verifyIdentity(token);
+      // Cognito = compradores/vendedores (siempre BUYER_SELLER); el rol de Entra solo vale para tokens de Entra.
+      const role = identity.provider === 'cognito' ? DEFAULT_ROLE : roleFromToken(identity.roles);
+      setHeader(req, 'x-user-id', identity.userId);
+      setHeader(req, 'x-user-role', role);
+      setHeader(req, 'x-user-email', identity.email);
+      setHeader(req, 'x-user-name', identity.name);
       // Garantiza que el usuario exista en ms-user (alta automática en su primera petición). No bloquea ni rompe la request.
       ensureUserSynced({
-        userId: decoded.oid,
-        role: roleFromToken(decoded.roles),
-        email: decoded.preferred_username ?? '',
-        name: decoded.name ?? '',
+        userId: identity.userId,
+        role,
+        email: identity.email,
+        name: identity.name,
       });
     } catch (err) {
       logError(`[auth] Token rechazado en ${req.method} ${req.path}: ${(err as Error).message}`);

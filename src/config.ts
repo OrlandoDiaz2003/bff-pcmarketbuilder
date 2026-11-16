@@ -43,6 +43,12 @@ export const config = {
   // Identificadores públicos del App Registration (no son secretos; el front ya los expone).
   azureTenantId: process.env.AZURE_TENANT_ID || '35365687-614a-481c-8b8b-b4debee24880',
   azureClientId: process.env.AZURE_CLIENT_ID || '6c2342af-22f6-4de8-a545-2a3b04e7d1ff',
+  // Cognito (compradores y vendedores). También son identificadores públicos: el front los expone.
+  cognito: {
+    region: process.env.COGNITO_REGION || 'us-east-1',
+    userPoolId: process.env.COGNITO_USER_POOL_ID || 'us-east-1_GiUdp9djL',
+    clientId: process.env.COGNITO_CLIENT_ID || '4h6pi8s7p34cttlqhqngcf57ui',
+  },
   cacheTtlMs: numberFromEnv('CACHE_TTL_MS', 300_000),
   userCacheTtlMs: numberFromEnv('USER_CACHE_TTL_MS', 300_000),
   // Alta/actualización automática del usuario en ms-user a partir del token (ver services/userSync.ts).
